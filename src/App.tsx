@@ -18,7 +18,7 @@ function App() {
     errorMessage,
     finishActivePath,
     loadProject,
-    loadReferenceImageFromDialog,
+    loadReferenceImage,
     projectPath,
     saveProject,
     selectedPathId,
@@ -34,7 +34,7 @@ function App() {
       errorMessage: state.errorMessage,
       finishActivePath: state.finishActivePath,
       loadProject: state.loadProject,
-      loadReferenceImageFromDialog: state.loadReferenceImageFromDialog,
+      loadReferenceImage: state.loadReferenceImage,
       projectPath: state.projectPath,
       saveProject: state.saveProject,
       selectedPathId: state.selectedPathId,
@@ -43,6 +43,13 @@ function App() {
       statusMessage: state.statusMessage,
     })),
   );
+
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const [file] = e.target.files ?? [];
+    if (!file) return;
+    await loadReferenceImage(file);
+    e.target.value = "";
+  };
 
   const handleSave = async () => {
     setSaveInFlight(true);
@@ -98,9 +105,16 @@ function App() {
       <header className="topbar">
         <span className="app-name">lines</span>
         <div className="topbar-sep" />
-        <button className="topbar-btn" onClick={loadReferenceImageFromDialog} type="button">
+        <button className="topbar-btn" onClick={() => imageInputRef.current?.click()} type="button">
           Open Image
         </button>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden-file-input"
+          onChange={handleImageChange}
+        />
         <button className="topbar-btn" onClick={loadProject} type="button">
           Open Project
         </button>
