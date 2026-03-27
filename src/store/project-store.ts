@@ -93,8 +93,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   goToProject: async (project) => {
-    const components = await get().refreshComponents(project);
-    set({ screen: { id: "project", project, components } });
+    try {
+      const components = await get().refreshComponents(project);
+      set({ screen: { id: "project", project, components } });
+    } catch (e) {
+      console.error("goToProject failed:", e);
+      set({ screen: { id: "project", project, components: [] } });
+    }
   },
 
   openComponent: (project, component) => {
