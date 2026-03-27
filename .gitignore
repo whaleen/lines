@@ -16,6 +16,7 @@ dist-ssr
 .agents/
 .claude/
 .kiro/
+.prompts/
 .vite-hooks/
 skills-lock.json
 CLAUDE.md
