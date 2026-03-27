@@ -1,91 +1,147 @@
-# pemguin — Architecture Overview
+# lines — Architecture Overview
 
-## Structure
+## Process Model
 
-pemguin is a single-file Rust TUI application. All state, rendering, key handling, data loading, and GitHub integration live in `cli/src/main.rs`. The TUI is built on Ratatui + Crossterm.
-
-## Screen Model
-
-Two top-level screens:
+lines is a Tauri 2 desktop app. The frontend (React + TypeScript) runs in a WebView; the backend (Rust) handles native file I/O. Communication goes through typed `invoke` calls.
 
 ```
-Screen::Projects          — root project list
-Screen::InProject(tab)    — drilled into a project, showing one of 8 tabs
+Frontend (WebView)          Backend (Rust)
+──────────────────          ──────────────
+React + Vite+               tauri::command handlers
+Zustand store          ←→   load_lines_project
+TraceCanvas (SVG)           save_lines_project
+Inspector                   tauri-plugin-dialog
+Toolbar                     tauri-plugin-updater
+useUpdater hook             tauri-plugin-process
 ```
 
-Tab variants: `Home | Issues | Setup | Prompts | Memories | Skills | Mcp | Pane`
-
-## Application State (`App`)
-
-Key fields:
-
-- `screen: Screen` — current screen + active tab
-- `projects: Vec<Project>` — scanned project list
-- `project_entries: Vec<ProjectEntry>` — flat render list (Group headers + Item indices)
-- `repo: String` — active project's `owner/repo` slug
-- `context: String` — `"owner/repo (branch)"` used for prompt auto-fill
-- Per-tab state: `issue_list_state`, `setup_items`, `prompt_state`, `memory_files`, `skills`, `mcp_servers`, etc.
-
-## Layout
-
-Every InProject screen uses a 2-row header:
+## Frontend Structure
 
 ```
-┌──────────────────────────────────────────┐
-│  header row: 🐧 pm  repo-name  branch    │  ← identity
-│  nav row:  1 home  2 issues  3 setup …   │  ← tabs
-├──────────────────────────────────────────┤
-│  content area (Min(0))                   │
-├──────────────────────────────────────────┤
-│  footer: key hints                       │
-└──────────────────────────────────────────┘
+src/
+  App.tsx                  — shell, topbar, update banner, keyboard shortcuts
+  components/
+    TraceCanvas.tsx        — SVG canvas, drawing, selection, drag, zoom/pan, context menu
+    Inspector.tsx          — right panel: path properties, project metadata
+    Toolbar.tsx            — left panel: tool selector with Radix tooltips
+  hooks/
+    useUpdater.ts          — auto-update check, download progress, relaunch
+  store/
+    editor-store.ts        — Zustand store: all editor state and actions
+  lib/
+    component-generator.ts — converts LinesDocument → .tsx source string
+    document-serializer.ts — LinesDocument → JSON
+    path-data.ts           — points[] → SVG path `d` attribute
+  types/
+    lines.ts               — LinesDocument, LinePath, Point, DEFAULT_DOCUMENT
 ```
 
-Some tabs add a variable-height middle row (edit input, status message).
+## Document Model (`LinesDocument`)
 
-## Key Handling
+```ts
+{
+  name: string
+  sourceImage: { src: string; width: number; height: number }
+  paths: LinePath[]
+  export: { componentName: string; outputPath: string }
+}
 
-`handle_key()` dispatches in layers:
-
-1. `Ctrl+C` — always quit
-2. Global InProject handlers (when not in a sub-flow): `Esc` → back, `q` → quit, `Tab` / number keys → switch tab
-3. Sub-screen handler: `handle_home`, `handle_issues`, `handle_prompts`, etc.
-
-Sub-flows (prompt fill, home edit, memory input) capture all keys and suppress global nav until dismissed with `Esc` or `Enter`.
-
-## Project Scanning
-
-`scan_projects()` walks at most 2 levels from the configured root:
-
-```
-~/Projects/
-  repo-a/           ← level 1, .git present → included, group=""
-  _org/             ← level 1, no .git
-    repo-b/         ← level 2, .git present → included, group="_org"
-    repo-c/cli/     ← level 3, .git present → NOT found
+LinePath: {
+  id: string         // "path_<8 random chars>"
+  points: Point[]    // { x, y } in image pixel space
+  closed: boolean
+  stroke: "currentColor" | `#${string}`
+  strokeWidth: number
+  fill: "none" | string
+}
 ```
 
-For each found directory, `project_info()` runs `git` subprocesses to get remote URL, current branch, dirty status, and commits-ahead count.
+The document is saved as `.lines.json`. The generated `.tsx` file is derived from it on every save.
 
-## Data Flow
+## Editor State (`editor-store.ts`)
+
+Key state slices:
+
+| Field | Purpose |
+|-------|---------|
+| `document` | The LinesDocument being edited |
+| `activeTool` | `"draw"` \| `"select"` \| `"node"` |
+| `activePathId` | The path currently being drawn into |
+| `selectedPathId` | Primary selected path (inspector target) |
+| `selectedPathIds` | All selected paths (multi-select) |
+| `selectedPointIndex` | Selected point index in node edit mode |
+| `currentStroke` | Stroke color for next new path |
+| `currentStrokeWidth` | Stroke width for next new path |
+| `referenceImageUrl` | Object URL or `convertFileSrc` URL for the background image |
+| `projectPath` | Filesystem path to the `.lines.json` file |
+
+## Canvas Coordinate System
+
+The SVG `viewBox` is driven by `{ x, y, zoom }` viewport state:
 
 ```
-App::open_project(idx)
-  → scan_setup_items()       — synchronous filesystem checks
-  → load_home_data()         — gh CLI calls (blocks UI briefly)
-  → load_issues()            — gh CLI call
-  → load_prompts()           — filesystem read
-  → load_memories()          — filesystem read
-  → load_skills()            — reads skills-lock.json
-  → load_mcp_servers()       — reads .mcp.json
+viewBox = `${viewBoxX} ${viewBoxY} ${width/zoom} ${height/zoom}`
 ```
 
-All I/O is synchronous. There is no async loading or spinner.
+Screen → canvas coordinate conversion uses the SVG matrix API for pixel accuracy at any zoom/pan level:
 
-## Prompt System
+```ts
+const pt = svgRef.current.createSVGPoint();
+pt.x = clientX; pt.y = clientY;
+const r = pt.matrixTransform(svgRef.current.getScreenCTM().inverse());
+// r.x, r.y are in image pixel space
+```
 
-Prompts are Markdown files. Placeholders use `{PLACEHOLDER}` syntax. `auto_values()` pre-fills `{REPO}`, `{BRANCH}`, `{ISSUE}` from app state. Remaining placeholders are filled interactively via `PromptState::Fill`. `extract_body()` strips the first fenced code block if present (used for copying just the template content).
+This avoids the letterboxing errors that occur with `getBoundingClientRect()` math when the SVG's aspect ratio differs from its container.
 
-## Pane Tab
+## Drawing Modes
 
-Tab 8 is a reserved placeholder. The intent is to embed a child TUI (Yazi, Helix) via `tui-term` (PTY emulator widget). `Ctrl+W` is reserved for focus handoff between the pane and pemguin nav. Not yet implemented.
+**Click-to-place (pen tool):** Each `pointerdown` on the canvas calls `addPointAt`. `Enter` finishes; `Escape` cancels.
+
+**Freehand (pen tool, press+drag):** `pointerdown` starts a stroke and sets `isDrawing = true`. A window-level `pointermove` listener samples points at `FREEHAND_THRESHOLD = 4` canvas units. `pointerup` calls `finishActivePath` and clears the drawing state.
+
+Both modes share `addPointAt` in the store — the difference is only in how points are sourced (discrete clicks vs. continuous pointer movement).
+
+## Drag States
+
+Three independent drag state machines run on window-level `pointermove`:
+
+| State | What it does |
+|-------|-------------|
+| `pointDragState` | Moves a single node handle (node edit tool) |
+| `pathDragState` | Moves all selected paths together (select tool); captures `originals` at drag start to avoid drift |
+| `panState` | Pans the viewport (spacebar + drag or middle-mouse) |
+
+## File I/O
+
+Both files are written atomically by a single `save_lines_project` Rust command:
+
+```
+invoke("save_lines_project", { projectPath, projectSource, componentPath, componentSource })
+```
+
+On load, `load_lines_project` reads the JSON and returns it as a string; the frontend parses it and restores `referenceImageUrl` via `convertFileSrc` if `sourceImage.src` is an absolute path.
+
+## Update Pipeline
+
+```
+git tag v1.2.3
+  → release.yml (GitHub Actions)
+    → tauri-action: universal macOS binary + signed .tar.gz
+    → GitHub release published
+  → update-manifest.yml (triggered by release:published event)
+    → fetches release assets via gh api
+    → writes latest.json to whaleen/homebrew-tap
+      {
+        version, pub_date, notes,
+        platforms: { "darwin-universal": { url, signature } }
+      }
+
+App launch (production)
+  → tauri-plugin-updater checks latest.json endpoint
+  → if update.available: show banner → user clicks Install
+  → downloadAndInstall with progress events → status: "ready"
+  → user clicks Relaunch → tauri-plugin-process relaunch()
+```
+
+Signing uses a minisign keypair. The public key is embedded in `tauri.conf.json`; the private key lives in `TAURI_SIGNING_PRIVATE_KEY` GitHub secret.

@@ -5,42 +5,46 @@ Feature source of truth. Update this when features ship, change, or get cut.
 ## Editor — Canvas
 
 - ✅ Load reference image (PNG/JPG) as non-exportable background layer
-- ✅ Pan (spacebar + drag)
-- ✅ Zoom (scroll wheel)
-- ✅ SVG canvas with correct viewport/transform
+- ✅ Pan (spacebar + drag, or middle-mouse drag)
+- ✅ Zoom (scroll wheel, zoom buttons, fit button)
+- ✅ SVG canvas with correct viewport/transform (getScreenCTM for pixel-accurate coordinate mapping)
+- ✅ Reference image opacity control (topbar slider)
 - 📋 Fit-to-window on image load
 - 📋 Zoom to fit / zoom to 100% keyboard shortcuts
 - 📋 Canvas background color toggle (white / dark / transparent grid)
-- ✅ Reference image opacity control (topbar slider)
 
 ## Editor — Tools
 
-- ✅ Pen tool (click to place points, building open polyline paths)
-- ✅ Select tool (click path to select)
+- ✅ Pen tool — click to place points (open polyline)
+- ✅ Pen tool — press and drag for freehand continuous stroke (auto-finishes on pointerup)
+- ✅ Select tool (click path to select, drag to move)
+- ✅ Node edit tool — select individual points on a path, drag to reposition
 - ✅ Finish path (Enter)
 - ✅ Cancel active path (Escape)
-- ✅ Delete selected path (Delete/Backspace)
-- ✅ Node edit mode — select individual points on a path, drag to reposition
+- ✅ Delete selected path(s) (Delete/Backspace)
+- ✅ Delete individual point (Delete/Backspace in node edit mode)
 - ✅ Move tool — drag entire selected path
 - ✅ Multi-select — shift+click to add/remove paths from selection
 - ✅ Duplicate path(s) — ⌘D or context menu
+- ✅ Right-click context menu — Duplicate / Delete with selection count
 - 📋 Close path (toggle open/closed)
 - 📋 Insert point on path segment (click on edge)
-- 📋 Delete individual point
 - 📋 Bezier curve handles (v2, deferred)
 
 ## Editor — Toolbar
 
-- ✅ Draw / Select tool buttons
-- 📋 Proper tool palette with icons (not text labels)
-- 📋 Tool keyboard shortcuts shown in tooltip
-- 📋 Active tool highlight
-- 📋 Node edit tool in toolbar
+- ✅ Tool palette with SVG icons (Move, Node Edit, Pen)
+- ✅ Tool keyboard shortcuts shown in tooltip (V, A, P)
+- ✅ Active tool highlight
+- ✅ Node edit tool in toolbar
+- ✅ Tooltips via Radix UI
 
 ## Editor — Inspector / Properties
 
-- ✅ Stroke color picker
+- ✅ Stroke color picker + hex input
 - ✅ Stroke width input
+- ✅ Stroke style persists to new paths (currentStroke / currentStrokeWidth)
+- ✅ Stroke / width changes apply to all selected paths
 - ✅ Delete path button
 - 📋 Stroke uses CSS var reference (e.g. `var(--foreground)`) with hex fallback
 - 📋 Fill color (none / CSS var / hex)
@@ -62,6 +66,7 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - ✅ Save project as `.lines.json`
 - ✅ Load `.lines.json` project file
 - ✅ Generate React `.tsx` component from document
+- ✅ Component name and output path editable in inspector
 - 📋 Auto-save (write `.lines.json` on every change, debounced)
 - 📋 Open existing `.tsx` component + its sibling `.lines.json` for editing (round-trip)
 - 📋 Recent files list
@@ -75,6 +80,22 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - 📋 Stroke colors default to CSS vars (`var(--foreground)`) or explicit hex
 - 📋 Component is a single default export, named from project name (PascalCase)
 - 📋 No runtime dependencies — pure SVG in JSX
+
+## Desktop App — Distribution
+
+- ✅ macOS universal binary (arm64 + x86_64)
+- ✅ GitHub Actions release pipeline (tag push → signed DMG → published release)
+- ✅ Homebrew Cask install (`brew install whaleen/tap/lines`)
+- ✅ In-app auto-updater — checks on launch, downloads in background, prompts to relaunch
+- ✅ Signed releases (minisign keypair, TAURI_SIGNING_PRIVATE_KEY secret)
+- ✅ `latest.json` manifest auto-updated in homebrew-tap on release publish
+
+## Desktop App — UX
+
+- 📋 File association: double-click `.lines.json` opens in editor
+- 📋 Drag-and-drop image onto canvas to set reference
+- 📋 Drag-and-drop `.lines.json` onto window to open
+- 📋 App menu (File, Edit)
 
 ## CLI (`lines`)
 
@@ -102,18 +123,9 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - 📋 Works with any shadcn project out of the box — no extra setup beyond `lines init`
 - 📋 Components use the same CSS variable names as shadcn (`--background`, `--foreground`, etc.)
 
-## Desktop App — UX
-
-- 📋 Native window chrome (minimal, borderless or custom titlebar)
-- 📋 File association: double-click `.lines.json` opens in editor
-- 📋 Drag-and-drop image onto canvas to set reference
-- 📋 Drag-and-drop `.lines.json` onto window to open
-- 📋 App menu (File, Edit)
-
 ## Known Issues / Open
 
 - Canvas doesn't fit-to-window on image load
 - No preview of what the component looks like outside the editor (no theme preview)
 - Stroke colors are raw hex — no CSS var support yet
-- No project init command (create components/lines/data/ dir)
 - No close path toggle
