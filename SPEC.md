@@ -11,7 +11,7 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - 📋 Fit-to-window on image load
 - 📋 Zoom to fit / zoom to 100% keyboard shortcuts
 - 📋 Canvas background color toggle (white / dark / transparent grid)
-- 📋 Reference image opacity control (so traces are visible over busy images)
+- ✅ Reference image opacity control (topbar slider)
 
 ## Editor — Tools
 
@@ -20,8 +20,10 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - ✅ Finish path (Enter)
 - ✅ Cancel active path (Escape)
 - ✅ Delete selected path (Delete/Backspace)
-- 📋 Node edit mode — select individual points on a path, drag to reposition
-- 📋 Move tool — drag entire selected path
+- ✅ Node edit mode — select individual points on a path, drag to reposition
+- ✅ Move tool — drag entire selected path
+- ✅ Multi-select — shift+click to add/remove paths from selection
+- ✅ Duplicate path(s) — ⌘D or context menu
 - 📋 Close path (toggle open/closed)
 - 📋 Insert point on path segment (click on edge)
 - 📋 Delete individual point
@@ -108,12 +110,10 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - 📋 Drag-and-drop `.lines.json` onto window to open
 - 📋 App menu (File, Edit)
 
-## Known Issues / Codex Wireframe Gaps
+## Known Issues / Open
 
-- Toolbar is text-label buttons — needs icon-based tool palette
-- No node edit mode (can't move individual points after placing)
-- No move tool (can't reposition whole paths)
-- Inspector mixes project settings and path properties awkwardly
 - Canvas doesn't fit-to-window on image load
 - No preview of what the component looks like outside the editor (no theme preview)
 - Stroke colors are raw hex — no CSS var support yet
+- No project init command (create components/lines/data/ dir)
+- No close path toggle
