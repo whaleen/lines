@@ -43,7 +43,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: lines ${{ github.ref_name }}
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
@@ -65,33 +65,39 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           TAG: ${{ github.ref_name }}
-          VERSION: ${{ github.ref_name }}
         run: |
           VERSION="${TAG#v}"
 
-          # Fetch release data
+          # Fetch release (published, so tag lookup works)
           RELEASE=$(gh api repos/whaleen/lines/releases/tags/$TAG)
 
-          # Get the .app.tar.gz asset URL and signature
           URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz")) | .browser_download_url')
-          SIG=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz.sig")) | .browser_download_url')
-          SIG_CONTENT=$(curl -sL "$SIG")
+          SIG_URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz.sig")) | .browser_download_url')
+          SIG_CONTENT=$(curl -sL "$SIG_URL")
           PUB_DATE=$(echo "$RELEASE" | jq -r '.published_at')
           NOTES=$(echo "$RELEASE" | jq -r '.body // ""')
 
-          cat > latest.json <<EOF
-          {
-            "version": "${VERSION}",
-            "pub_date": "${PUB_DATE}",
-            "notes": ${NOTES@Q},
-            "platforms": {
-              "darwin-universal": {
-                "url": "${URL}",
-                "signature": "${SIG_CONTENT}"
+          # Build JSON safely via jq
+          jq -n \
+            --arg version "$VERSION" \
+            --arg pub_date "$PUB_DATE" \
+            --arg notes "$NOTES" \
+            --arg url "$URL" \
+            --arg sig "$SIG_CONTENT" \
+            '{
+              version: $version,
+              pub_date: $pub_date,
+              notes: $notes,
+              platforms: {
+                "darwin-universal": {
+                  url: $url,
+                  signature: $sig
+                }
               }
-            }
-          }
-          EOF
+            }' > latest.json
+
+          echo "Generated latest.json:"
+          cat latest.json
 
       - name: Commit and push latest.json
         run: |
