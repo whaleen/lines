@@ -554,3 +554,376 @@ html, body, #root {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ── Launch Screen ───────────────────────── */
+
+.launch-screen {
+  width: 100%;
+  height: 100%;
+  background: #070910;
+  color: #d8e0f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 40px;
+}
+
+.launch-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.launch-logo {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #7a94f0;
+}
+
+.launch-tagline {
+  font-size: 12px;
+  color: rgba(216, 224, 240, 0.35);
+  letter-spacing: 0.04em;
+}
+
+.launch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.launch-btn {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d8e0f0;
+  font-size: 13px;
+  font: inherit;
+  cursor: pointer;
+  transition: background 100ms;
+}
+
+.launch-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.launch-btn.primary {
+  background: rgba(100, 130, 255, 0.18);
+  border-color: rgba(140, 161, 255, 0.35);
+  color: #a0b4ff;
+  font-weight: 600;
+}
+
+.launch-btn.primary:hover {
+  background: rgba(100, 130, 255, 0.28);
+}
+
+.launch-recents {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.launch-recents-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(216, 224, 240, 0.28);
+}
+
+.launch-recents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.launch-recent-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 80ms, border-color 80ms;
+}
+
+.launch-recent-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.launch-recent-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d8e0f0;
+}
+
+.launch-recent-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.launch-recent-mode {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.launch-recent-mode.shadcn {
+  background: rgba(100, 130, 255, 0.14);
+  color: #8ca1ff;
+}
+
+.launch-recent-mode.adhoc {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(216, 224, 240, 0.45);
+}
+
+.launch-recent-time {
+  font-size: 11px;
+  color: rgba(216, 224, 240, 0.3);
+}
+
+.launch-recent-path {
+  font-size: 10px;
+  color: rgba(216, 224, 240, 0.2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Project Screen ──────────────────────── */
+
+.project-screen {
+  width: 100%;
+  height: 100%;
+  background: #070910;
+  color: #d8e0f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 40px;
+  background: #0b0d14;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.project-back-btn {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(216, 224, 240, 0.6);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 80ms;
+}
+
+.project-back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8e0f0;
+}
+
+.project-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d8e0f0;
+}
+
+.project-mode-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.project-mode-badge.shadcn {
+  background: rgba(100, 130, 255, 0.14);
+  color: #8ca1ff;
+}
+
+.project-mode-badge.adhoc {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(216, 224, 240, 0.45);
+}
+
+.project-topbar-spacer { flex: 1; }
+
+.project-refresh-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: transparent;
+  color: rgba(216, 224, 240, 0.4);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 80ms, color 80ms;
+}
+
+.project-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d8e0f0;
+}
+
+.project-new-btn {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 5px;
+  border: 1px solid rgba(140, 161, 255, 0.35);
+  background: rgba(100, 130, 255, 0.18);
+  color: #a0b4ff;
+  font-size: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 80ms;
+}
+
+.project-new-btn:hover {
+  background: rgba(100, 130, 255, 0.28);
+}
+
+.project-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.project-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.project-empty-hint {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(216, 224, 240, 0.3);
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.component-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 80ms, border-color 80ms;
+  text-align: center;
+}
+
+.component-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(140, 161, 255, 0.2);
+}
+
+.component-card-preview {
+  width: 80px;
+  height: 60px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.component-card-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d8e0f0;
+  word-break: break-all;
+}
+
+.component-card-warning {
+  font-size: 10px;
+  color: rgba(255, 130, 130, 0.7);
+}
+
+/* ── Editor topbar extras ─────────────────── */
+
+.topbar-name-nudge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.topbar-name-input {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(140, 161, 255, 0.4);
+  background: rgba(100, 130, 255, 0.08);
+  color: #d8e0f0;
+  font-size: 12px;
+  font: inherit;
+  outline: none;
+  width: 200px;
+}
+
+.topbar-name-input:focus {
+  border-color: rgba(140, 161, 255, 0.6);
+  background: rgba(100, 130, 255, 0.12);
+}
+
+.topbar-name-hint {
+  font-size: 11px;
+  color: rgba(216, 224, 240, 0.3);
+  white-space: nowrap;
+}
+
+.topbar-saving {
+  font-size: 11px;
+  color: rgba(216, 224, 240, 0.3);
+  font-style: italic;
+}
+
+.hidden-file-input {
+  display: none;
+}

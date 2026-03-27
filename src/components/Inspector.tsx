@@ -1,58 +1,61 @@
 import { useShallow } from "zustand/react/shallow";
-import { useEditorStore } from "../store/editor-store";
+import { useEditorStore, sanitizeComponentName } from "../store/editor-store";
+import type { Project } from "../types/project";
 
-export function Inspector() {
+type InspectorProps = { project: Project };
+
+export function Inspector({ project: _project }: InspectorProps) {
   const {
+    componentName,
     deleteSelectedPath,
     deleteSelectedPoint,
     document,
-    projectPath,
     selectedPath,
     selectedPointIndex,
     setComponentName,
-    setOutputPath,
-    setProjectName,
     setStroke,
     setStrokeWidth,
-    pickProjectPath,
-    pickComponentOutputPath,
   } = useEditorStore(
     useShallow((state) => ({
+      componentName: state.componentName,
       deleteSelectedPath: state.deleteSelectedPath,
       deleteSelectedPoint: state.deleteSelectedPoint,
       document: state.document,
-      projectPath: state.projectPath,
       selectedPath: state.document.paths.find((p) => p.id === state.selectedPathId) ?? null,
       selectedPointIndex: state.selectedPointIndex,
       setComponentName: state.setComponentName,
-      setOutputPath: state.setOutputPath,
-      setProjectName: state.setProjectName,
       setStroke: state.setStroke,
       setStrokeWidth: state.setStrokeWidth,
-      pickProjectPath: state.pickProjectPath,
-      pickComponentOutputPath: state.pickComponentOutputPath,
     })),
   );
 
   const strokeHex =
-    selectedPath && selectedPath.stroke !== "currentColor"
-      ? selectedPath.stroke
-      : "#e6edf7";
+    selectedPath && selectedPath.stroke !== "currentColor" ? selectedPath.stroke : "#e6edf7";
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitized = sanitizeComponentName(e.target.value);
+    if (sanitized) setComponentName(sanitized);
+  };
 
   return (
     <aside className="inspector">
-      {/* Document */}
+      {/* Component */}
       <div className="insp-section">
-        <div className="insp-label">Document</div>
+        <div className="insp-label">Component</div>
         <div className="insp-field">
-          <label htmlFor="doc-name">Name</label>
-          <input id="doc-name" value={document.name} onChange={(e) => setProjectName(e.target.value)} />
+          <label htmlFor="comp-name">Name</label>
+          <input
+            id="comp-name"
+            value={componentName}
+            onChange={handleNameChange}
+            placeholder="MyIllustrationLines"
+            spellCheck={false}
+          />
         </div>
-        <div className="insp-field">
-          <label htmlFor="comp-name">Component</label>
-          <input id="comp-name" value={document.export.componentName} onChange={(e) => setComponentName(e.target.value)} />
+        <div className="insp-stat">
+          {document.paths.length} path{document.paths.length !== 1 ? "s" : ""}
+          {document.sourceImage.width > 0 ? ` · ${document.sourceImage.width}×${document.sourceImage.height}` : ""}
         </div>
-        <div className="insp-stat">{document.paths.length} path{document.paths.length !== 1 ? "s" : ""} · {document.sourceImage.width}×{document.sourceImage.height}</div>
       </div>
 
       {/* Selection */}
@@ -105,35 +108,6 @@ export function Inspector() {
         ) : (
           <div className="insp-empty">Select a path to edit</div>
         )}
-      </div>
-
-      {/* Files */}
-      <div className="insp-section">
-        <div className="insp-label">Files</div>
-        <div className="insp-field">
-          <label>Project (.lines.json)</label>
-          <div className="file-row">
-            <input
-              readOnly
-              value={projectPath}
-              placeholder="not set"
-              title={projectPath}
-            />
-            <button className="insp-pick-btn" onClick={pickProjectPath} type="button" title="Choose project file path">…</button>
-          </div>
-        </div>
-        <div className="insp-field">
-          <label>Component (.tsx)</label>
-          <div className="file-row">
-            <input
-              readOnly
-              value={document.export.outputPath}
-              placeholder="not set"
-              title={document.export.outputPath}
-            />
-            <button className="insp-pick-btn" onClick={pickComponentOutputPath} type="button" title="Choose component output path">…</button>
-          </div>
-        </div>
       </div>
     </aside>
   );
