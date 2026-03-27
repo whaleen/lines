@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore, sanitizeComponentName } from "../store/editor-store";
 import type { Project } from "../types/project";
@@ -29,13 +30,21 @@ export function Inspector({ project: _project }: InspectorProps) {
     })),
   );
 
+  const [nameInput, setNameInput] = useState(componentName);
+
+  // Keep local input in sync when store value changes externally
+  useEffect(() => {
+    setNameInput(componentName);
+  }, [componentName]);
+
+  const commitName = () => {
+    const sanitized = sanitizeComponentName(nameInput);
+    if (sanitized) setComponentName(sanitized);
+    else setNameInput(componentName); // revert if empty/invalid
+  };
+
   const strokeHex =
     selectedPath && selectedPath.stroke !== "currentColor" ? selectedPath.stroke : "#e6edf7";
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitized = sanitizeComponentName(e.target.value);
-    if (sanitized) setComponentName(sanitized);
-  };
 
   return (
     <aside className="inspector">
@@ -46,8 +55,10 @@ export function Inspector({ project: _project }: InspectorProps) {
           <label htmlFor="comp-name">Name</label>
           <input
             id="comp-name"
-            value={componentName}
-            onChange={handleNameChange}
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
             placeholder="MyIllustrationLines"
             spellCheck={false}
           />
