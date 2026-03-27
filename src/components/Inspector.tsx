@@ -1,75 +1,50 @@
 import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useEditorStore, sanitizeComponentName } from "../store/editor-store";
+import { useEditorStore } from "../store/editor-store";
 import type { Project } from "../types/project";
 
 type InspectorProps = { project: Project };
 
 export function Inspector({ project: _project }: InspectorProps) {
   const {
-    componentName,
     deleteSelectedPath,
     deleteSelectedPoint,
     document,
     selectedPath,
     selectedPointIndex,
-    setComponentName,
     setStroke,
     setStrokeWidth,
   } = useEditorStore(
     useShallow((state) => ({
-      componentName: state.componentName,
       deleteSelectedPath: state.deleteSelectedPath,
       deleteSelectedPoint: state.deleteSelectedPoint,
       document: state.document,
       selectedPath: state.document.paths.find((p) => p.id === state.selectedPathId) ?? null,
       selectedPointIndex: state.selectedPointIndex,
-      setComponentName: state.setComponentName,
       setStroke: state.setStroke,
       setStrokeWidth: state.setStrokeWidth,
     })),
   );
 
-  const [nameInput, setNameInput] = useState(componentName);
+  const [widthInput, setWidthInput] = useState(String(selectedPath?.strokeWidth ?? 2));
 
-  // Keep local input in sync when store value changes externally
   useEffect(() => {
-    setNameInput(componentName);
-  }, [componentName]);
-
-  const commitName = () => {
-    const sanitized = sanitizeComponentName(nameInput);
-    if (sanitized) setComponentName(sanitized);
-    else setNameInput(componentName); // revert if empty/invalid
-  };
+    if (selectedPath) setWidthInput(String(selectedPath.strokeWidth));
+  }, [selectedPath?.strokeWidth]);
 
   const strokeHex =
     selectedPath && selectedPath.stroke !== "currentColor" ? selectedPath.stroke : "#e6edf7";
 
   return (
     <aside className="inspector">
-      {/* Component */}
       <div className="insp-section">
-        <div className="insp-label">Component</div>
-        <div className="insp-field">
-          <label htmlFor="comp-name">Name</label>
-          <input
-            id="comp-name"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
-            placeholder="MyIllustrationLines"
-            spellCheck={false}
-          />
-        </div>
+        <div className="insp-label">Canvas</div>
         <div className="insp-stat">
           {document.paths.length} path{document.paths.length !== 1 ? "s" : ""}
           {document.sourceImage.width > 0 ? ` · ${document.sourceImage.width}×${document.sourceImage.height}` : ""}
         </div>
       </div>
 
-      {/* Selection */}
       <div className="insp-section">
         <div className="insp-label">Selection</div>
         {selectedPath ? (
@@ -99,8 +74,14 @@ export function Inspector({ project: _project }: InspectorProps) {
                 type="number"
                 min={0.5}
                 step={0.5}
-                value={selectedPath.strokeWidth}
-                onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                value={widthInput}
+                onChange={(e) => setWidthInput(e.target.value)}
+                onBlur={() => {
+                  const n = parseFloat(widthInput);
+                  if (Number.isFinite(n) && n > 0) setStrokeWidth(n);
+                  else setWidthInput(String(selectedPath.strokeWidth));
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
               />
             </div>
             <div className="insp-stat">
