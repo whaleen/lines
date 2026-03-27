@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { load } from "@tauri-apps/plugin-store";
 import { create } from "zustand";
+import { sanitizeComponentName } from "./editor-store";
 import type { ComponentEntry, Project, ProjectMode } from "../types/project";
 
 const STORE_FILE = "projects.json";
@@ -22,6 +23,8 @@ type ProjectState = {
   refreshComponents: (project: Project) => Promise<ComponentEntry[]>;
   openComponent: (project: Project, component: ComponentEntry) => void;
   newComponent: (project: Project) => void;
+  deleteComponent: (project: Project, component: ComponentEntry) => Promise<void>;
+  renameComponent: (project: Project, component: ComponentEntry, newName: string) => Promise<void>;
   goToLaunch: () => void;
   goToProject: (project: Project) => Promise<void>;
 };
@@ -32,6 +35,14 @@ function folderName(path: string) {
 
 function randomId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function derivePaths(linesDir: string, name: string) {
+  const dir = linesDir.replace(/\\/g, "/").replace(/\/$/, "");
+  return {
+    tsxPath: `${dir}/${name}.tsx`,
+    jsonPath: `${dir}/${name}.lines.json`,
+  };
 }
 
 async function saveRecents(projects: Project[]) {
@@ -108,6 +119,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   newComponent: (project) => {
     set({ screen: { id: "editor", project, component: null } });
+  },
+
+  deleteComponent: async (project, component) => {
+    await invoke("delete_component", {
+      tsxPath: component.tsxPath,
+      jsonPath: component.jsonPath,
+    });
+    await get().goToProject(project);
+  },
+
+  renameComponent: async (project, component, newName) => {
+    const sanitized = sanitizeComponentName(newName);
+    if (!sanitized || sanitized === component.name) return;
+
+    const { tsxPath: newTsx, jsonPath: newJson } = derivePaths(project.linesDir, sanitized);
+
+    await invoke("rename_component", {
+      oldTsxPath: component.tsxPath,
+      oldJsonPath: component.jsonPath,
+      newTsxPath: newTsx,
+      newJsonPath: newJson,
+    });
+
+    await get().goToProject(project);
   },
 
   goToLaunch: () => {

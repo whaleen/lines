@@ -130,6 +130,43 @@ fn list_components(lines_dir: String) -> Result<Vec<ComponentEntry>, String> {
     Ok(components)
 }
 
+/// Deletes both the .tsx and .lines.json files for a component.
+#[tauri::command]
+fn delete_component(tsx_path: String, json_path: String) -> Result<(), String> {
+    let tsx = Path::new(&tsx_path);
+    let json = Path::new(&json_path);
+    if tsx.exists() {
+        fs::remove_file(tsx).map_err(|e| e.to_string())?;
+    }
+    if json.exists() {
+        fs::remove_file(json).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Renames a component by moving both files to new paths derived from new_name.
+/// Returns the new ComponentEntry.
+#[tauri::command]
+fn rename_component(
+    old_tsx_path: String,
+    old_json_path: String,
+    new_tsx_path: String,
+    new_json_path: String,
+) -> Result<(), String> {
+    let old_tsx = Path::new(&old_tsx_path);
+    let new_tsx = Path::new(&new_tsx_path);
+    let old_json = Path::new(&old_json_path);
+    let new_json = Path::new(&new_json_path);
+
+    if old_tsx.exists() {
+        fs::rename(old_tsx, new_tsx).map_err(|e| e.to_string())?;
+    }
+    if old_json.exists() {
+        fs::rename(old_json, new_json).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 // ── App entry ────────────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -144,6 +181,8 @@ pub fn run() {
             load_lines_project,
             detect_project,
             list_components,
+            delete_component,
+            rename_component,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
