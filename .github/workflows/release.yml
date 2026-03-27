@@ -35,11 +35,68 @@ jobs:
         run: npm install
 
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: lines ${{ github.ref_name }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  update-manifest:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: whaleen/homebrew-tap
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Wait for release assets
+        run: sleep 15
+
+      - name: Generate latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+
+          # Fetch release data
+          RELEASE=$(gh api repos/whaleen/lines/releases/tags/$TAG)
+
+          # Get the .app.tar.gz asset URL and signature
+          URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz")) | .browser_download_url')
+          SIG=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz.sig")) | .browser_download_url')
+          SIG_CONTENT=$(curl -sL "$SIG")
+          PUB_DATE=$(echo "$RELEASE" | jq -r '.published_at')
+          NOTES=$(echo "$RELEASE" | jq -r '.body // ""')
+
+          cat > latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "notes": ${NOTES@Q},
+            "platforms": {
+              "darwin-universal": {
+                "url": "${URL}",
+                "signature": "${SIG_CONTENT}"
+              }
+            }
+          }
+          EOF
+
+      - name: Commit and push latest.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add latest.json
+          git commit -m "update: lines ${{ github.ref_name }}"
+          git push

@@ -38,6 +38,8 @@ fn load_lines_project(project_path: String) -> Result<String, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![save_lines_project, load_lines_project])
         .setup(|app| {
             if cfg!(debug_assertions) {

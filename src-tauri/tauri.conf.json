@@ -33,5 +33,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE0NDgzNkZFNUY2OTg5QTcKUldTbmlXbGYvalpJRlBIeVlIWDZuaGxLUHBQWXl0VG1vMTF3L1MrZkkrUzRPaFZ3RWJTYU1EMFkK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/whaleen/homebrew-tap/main/latest.json"
+      ]
+    }
   }
 }
