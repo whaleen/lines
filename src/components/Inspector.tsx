@@ -12,130 +12,128 @@ export function Inspector() {
     setComponentName,
     setOutputPath,
     setProjectName,
-    setProjectPath,
     setStroke,
     setStrokeWidth,
+    pickProjectPath,
+    pickComponentOutputPath,
   } = useEditorStore(
     useShallow((state) => ({
       deleteSelectedPath: state.deleteSelectedPath,
       deleteSelectedPoint: state.deleteSelectedPoint,
       document: state.document,
       projectPath: state.projectPath,
-      selectedPath: state.document.paths.find((path) => path.id === state.selectedPathId) ?? null,
+      selectedPath: state.document.paths.find((p) => p.id === state.selectedPathId) ?? null,
       selectedPointIndex: state.selectedPointIndex,
       setComponentName: state.setComponentName,
       setOutputPath: state.setOutputPath,
       setProjectName: state.setProjectName,
-      setProjectPath: state.setProjectPath,
       setStroke: state.setStroke,
       setStrokeWidth: state.setStrokeWidth,
+      pickProjectPath: state.pickProjectPath,
+      pickComponentOutputPath: state.pickComponentOutputPath,
     })),
   );
 
+  const strokeHex =
+    selectedPath && selectedPath.stroke !== "currentColor"
+      ? selectedPath.stroke
+      : "#e6edf7";
+
   return (
-    <aside className="panel inspector">
-      <div className="panel-header">
-        <p className="eyebrow">Inspector</p>
-        <h2>Project</h2>
+    <aside className="inspector">
+      {/* Document */}
+      <div className="insp-section">
+        <div className="insp-label">Document</div>
+        <div className="insp-field">
+          <label htmlFor="doc-name">Name</label>
+          <input id="doc-name" value={document.name} onChange={(e) => setProjectName(e.target.value)} />
+        </div>
+        <div className="insp-field">
+          <label htmlFor="comp-name">Component</label>
+          <input id="comp-name" value={document.export.componentName} onChange={(e) => setComponentName(e.target.value)} />
+        </div>
+        <div className="insp-stat">{document.paths.length} path{document.paths.length !== 1 ? "s" : ""} · {document.sourceImage.width}×{document.sourceImage.height}</div>
       </div>
 
-      <div className="inspector-list">
-        <section className="inspector-card">
-          <h3>Export</h3>
-          <div className="field-grid">
-            <div className="field-group">
-              <label htmlFor="project-name">Project name</label>
-              <input
-                id="project-name"
-                onChange={(event) => setProjectName(event.target.value)}
-                value={document.name}
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="project-path">Project file path</label>
-              <input
-                id="project-path"
-                onChange={(event) => setProjectPath(event.target.value)}
-                placeholder="Choose with the Project Path button"
-                value={projectPath}
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="component-name">Component name</label>
-              <input
-                id="component-name"
-                onChange={(event) => setComponentName(event.target.value)}
-                value={document.export.componentName}
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="output-path">Component output path</label>
-              <input
-                id="output-path"
-                onChange={(event) => setOutputPath(event.target.value)}
-                placeholder="Choose with the Component Path button"
-                value={document.export.outputPath}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="inspector-card">
-          <h3>Reference image</h3>
-          <p className="muted-copy">
-            {document.sourceImage.src
-              ? `${document.sourceImage.src} • ${document.sourceImage.width}x${document.sourceImage.height}`
-              : "Load an image from the left panel to start tracing."}
-          </p>
-        </section>
-
-        <section className="inspector-card">
-          <h3>Selection</h3>
-          {selectedPath ? (
-            <>
-              <div className="field-row">
-                <div className="field-group">
-                  <label htmlFor="stroke">Stroke</label>
-                  <input
-                    id="stroke"
-                    onChange={(event) => setStroke(event.target.value)}
-                    value={selectedPath.stroke}
-                  />
-                </div>
-                <div className="field-group">
-                  <label htmlFor="stroke-width">Stroke width</label>
-                  <input
-                    id="stroke-width"
-                    min={0.5}
-                    onChange={(event) => setStrokeWidth(Number(event.target.value))}
-                    step={0.5}
-                    type="number"
-                    value={selectedPath.strokeWidth}
-                  />
-                </div>
+      {/* Selection */}
+      <div className="insp-section">
+        <div className="insp-label">Selection</div>
+        {selectedPath ? (
+          <>
+            <div className="insp-field">
+              <label>Stroke</label>
+              <div className="color-row">
+                <input
+                  type="color"
+                  className="color-swatch"
+                  value={strokeHex}
+                  onChange={(e) => setStroke(e.target.value)}
+                  title="Pick stroke color"
+                />
+                <input
+                  className="color-text"
+                  value={selectedPath.stroke}
+                  onChange={(e) => setStroke(e.target.value)}
+                  placeholder="currentColor"
+                />
               </div>
-              <p className="muted-copy">
-                {selectedPath.points.length} points
-                {selectedPointIndex !== null ? ` • point ${selectedPointIndex + 1} selected` : ""}
-              </p>
-              <button
-                className="danger-button"
-                disabled={selectedPointIndex === null}
-                onClick={deleteSelectedPoint}
-                type="button"
-              >
-                Delete selected point
+            </div>
+            <div className="insp-field">
+              <label htmlFor="stroke-w">Width</label>
+              <input
+                id="stroke-w"
+                type="number"
+                min={0.5}
+                step={0.5}
+                value={selectedPath.strokeWidth}
+                onChange={(e) => setStrokeWidth(Number(e.target.value))}
+              />
+            </div>
+            <div className="insp-stat">
+              {selectedPath.points.length} pts
+              {selectedPointIndex !== null ? ` · pt ${selectedPointIndex + 1}` : ""}
+            </div>
+            {selectedPointIndex !== null && (
+              <button className="insp-del-btn" onClick={deleteSelectedPoint} type="button">
+                Delete point
               </button>
-              <button className="danger-button" onClick={deleteSelectedPath} type="button">
-                Delete selected path
-              </button>
-            </>
-          ) : (
-            <p className="muted-copy">
-              Select a path or point on the canvas to edit its stroke or delete it.
-            </p>
-          )}
-        </section>
+            )}
+            <button className="insp-del-btn" onClick={deleteSelectedPath} type="button">
+              Delete path
+            </button>
+          </>
+        ) : (
+          <div className="insp-empty">Select a path to edit</div>
+        )}
+      </div>
+
+      {/* Files */}
+      <div className="insp-section">
+        <div className="insp-label">Files</div>
+        <div className="insp-field">
+          <label>Project (.lines.json)</label>
+          <div className="file-row">
+            <input
+              readOnly
+              value={projectPath}
+              placeholder="not set"
+              title={projectPath}
+            />
+            <button className="insp-pick-btn" onClick={pickProjectPath} type="button" title="Choose project file path">…</button>
+          </div>
+        </div>
+        <div className="insp-field">
+          <label>Component (.tsx)</label>
+          <div className="file-row">
+            <input
+              readOnly
+              value={document.export.outputPath}
+              placeholder="not set"
+              title={document.export.outputPath}
+            />
+            <button className="insp-pick-btn" onClick={pickComponentOutputPath} type="button" title="Choose component output path">…</button>
+          </div>
+        </div>
       </div>
     </aside>
   );

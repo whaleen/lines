@@ -5,7 +5,7 @@ import { generateComponentSource } from "../lib/component-generator";
 import { serializeDocument } from "../lib/document-serializer";
 import { DEFAULT_DOCUMENT, type LinesDocument, type Point } from "../types/lines";
 
-type ActiveTool = "select" | "draw";
+type ActiveTool = "select" | "node" | "draw";
 
 type EditorState = {
   activePathId: string | null;
@@ -34,6 +34,7 @@ type EditorState = {
   setActiveTool: (tool: ActiveTool) => void;
   setComponentName: (value: string) => void;
   setOutputPath: (value: string) => void;
+  setPathPoints: (pathId: string, points: Point[]) => void;
   setProjectName: (value: string) => void;
   setProjectPath: (value: string) => void;
   setStroke: (value: string) => void;
@@ -490,14 +491,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectPath: (pathId) => {
     set({
       activePathId: null,
-      activeTool: "select",
       selectedPathId: pathId,
       selectedPointIndex: null,
     });
   },
   selectPoint: (pathId, pointIndex) => {
     set({
-      activeTool: "select",
       selectedPathId: pathId,
       selectedPointIndex: pointIndex,
     });
@@ -506,7 +505,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       activePathId: tool === "draw" ? state.activePathId : null,
       activeTool: tool,
-      selectedPointIndex: tool === "draw" ? null : state.selectedPointIndex,
+      selectedPointIndex: tool === "node" ? state.selectedPointIndex : null,
       statusMessage: "",
     }));
   },
@@ -529,6 +528,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           ...state.document.export,
           outputPath: value,
         },
+      },
+    }));
+  },
+  setPathPoints: (pathId, points) => {
+    set((state) => ({
+      document: {
+        ...state.document,
+        paths: state.document.paths.map((path) =>
+          path.id === pathId ? { ...path, points } : path,
+        ),
       },
     }));
   },

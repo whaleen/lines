@@ -8,21 +8,22 @@ import { useEditorStore } from "./store/editor-store";
 function App() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [saveInFlight, setSaveInFlight] = useState(false);
+  const [imageOpacity, setImageOpacity] = useState(0.78);
+
   const {
     activeTool,
-    document,
-    errorMessage,
+    cancelActivePath,
     deleteSelectedPath,
     deleteSelectedPoint,
-    cancelActivePath,
+    errorMessage,
     finishActivePath,
     loadProject,
-    loadReferenceImage,
+    loadReferenceImageFromDialog,
     projectPath,
     saveProject,
+    selectedPathId,
     selectedPointIndex,
     setActiveTool,
-    selectedPathId,
     statusMessage,
   } = useEditorStore(
     useShallow((state) => ({
@@ -30,11 +31,10 @@ function App() {
       cancelActivePath: state.cancelActivePath,
       deleteSelectedPath: state.deleteSelectedPath,
       deleteSelectedPoint: state.deleteSelectedPoint,
-      document: state.document,
       errorMessage: state.errorMessage,
       finishActivePath: state.finishActivePath,
       loadProject: state.loadProject,
-      loadReferenceImage: state.loadReferenceImage,
+      loadReferenceImageFromDialog: state.loadReferenceImageFromDialog,
       projectPath: state.projectPath,
       saveProject: state.saveProject,
       selectedPathId: state.selectedPathId,
@@ -44,69 +44,41 @@ function App() {
     })),
   );
 
-  const handleReferenceChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const [file] = event.target.files ?? [];
-
-    if (!file) {
-      return;
-    }
-
-    await loadReferenceImage(file);
-    event.target.value = "";
-  };
-
   const handleSave = async () => {
     setSaveInFlight(true);
-
-    try {
-      await saveProject();
-    } finally {
-      setSaveInFlight(false);
-    }
+    try { await saveProject(); } finally { setSaveInFlight(false); }
   };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const isTypingTarget =
+      if (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
-        target?.isContentEditable;
+        target?.isContentEditable
+      ) return;
 
-      if (isTypingTarget) {
-        return;
-      }
-
-      if (event.key === "d" || event.key === "D") {
+      if (event.key === "d" || event.key === "D" || event.key === "p" || event.key === "P") {
         event.preventDefault();
         setActiveTool("draw");
-      }
-
-      if (event.key === "v" || event.key === "V" || event.key === "s" || event.key === "S") {
+      } else if (event.key === "v" || event.key === "V") {
         event.preventDefault();
         setActiveTool("select");
-      }
-
-      if (event.key === "Enter") {
+      } else if (event.key === "a" || event.key === "A") {
+        event.preventDefault();
+        setActiveTool("node");
+      } else if (event.key === "Enter") {
         event.preventDefault();
         finishActivePath();
-      }
-
-      if (event.key === "Escape") {
+      } else if (event.key === "Escape") {
         event.preventDefault();
         cancelActivePath();
-      }
-
-      if (event.key === "Backspace" || event.key === "Delete") {
+      } else if (event.key === "Backspace" || event.key === "Delete") {
         event.preventDefault();
-        if (selectedPointIndex !== null) {
-          deleteSelectedPoint();
-        } else if (selectedPathId) {
-          deleteSelectedPath();
-        }
+        if (selectedPointIndex !== null) deleteSelectedPoint();
+        else if (selectedPathId) deleteSelectedPath();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
@@ -119,81 +91,54 @@ function App() {
     setActiveTool,
   ]);
 
+  const statusText = errorMessage || statusMessage || (projectPath ? projectPath.split(/[\\/]/).pop() : "");
+
   return (
     <div className="app-shell">
-      <aside className="panel sidebar">
-        <div className="panel-header">
-          <div>
-            <p className="eyebrow">lines</p>
-            <h1>Tracing Studio</h1>
-          </div>
-          <p className="panel-copy">
-            Trace over a reference image and save the result as a generated React SVG component.
-          </p>
-        </div>
-        <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} />
+      <header className="topbar">
+        <span className="app-name">lines</span>
+        <div className="topbar-sep" />
+        <button className="topbar-btn" onClick={loadReferenceImageFromDialog} type="button">
+          Open Image
+        </button>
+        <button className="topbar-btn" onClick={loadProject} type="button">
+          Open Project
+        </button>
+        <div className="topbar-sep" />
+        <label className="topbar-label" htmlFor="img-opacity">Ref</label>
         <input
-          ref={imageInputRef}
-          accept="image/*"
-          className="hidden-file-input"
-          onChange={handleReferenceChange}
-          type="file"
+          id="img-opacity"
+          className="topbar-range"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={imageOpacity}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setImageOpacity(Number(e.target.value))}
         />
-        <div className="action-row">
-          <button
-            className="tool-button"
-            onClick={() => imageInputRef.current?.click()}
-            type="button"
-          >
-            Open Image
-          </button>
-          <button className="tool-button" onClick={loadProject} type="button">
-            Open Project
-          </button>
-          <button
-            className="primary-button"
-            disabled={saveInFlight}
-            onClick={handleSave}
-            type="button"
-          >
-            {saveInFlight ? "Saving..." : "Save"}
-          </button>
-        </div>
-        <div className="inspector-card">
-          <h3>Shortcuts</h3>
-          <p className="muted-copy">
-            <strong>D</strong> draw, <strong>V</strong> select, <strong>Enter</strong> finish path,
-            <strong> Escape</strong> discard path, <strong>Delete</strong> remove selection.
-          </p>
-          <p className="muted-copy">
-            Use the mouse wheel to zoom. Hold <strong>Space</strong> and drag to pan.
-          </p>
-        </div>
-        <div className="status-stack">
-          <p className="status-line">
-            Project file:
-            <span>{projectPath || " not set"}</span>
-          </p>
-          {statusMessage ? <p className="status-ok">{statusMessage}</p> : null}
-          {errorMessage ? <p className="status-error">{errorMessage}</p> : null}
-        </div>
-      </aside>
+        {statusText && (
+          <>
+            <div className="topbar-sep" />
+            <span className={`topbar-status${errorMessage ? " error" : ""}`}>{statusText}</span>
+          </>
+        )}
+        <button
+          className="topbar-btn primary"
+          disabled={saveInFlight}
+          onClick={handleSave}
+          type="button"
+        >
+          {saveInFlight ? "Saving…" : "Save"}
+        </button>
+      </header>
 
-      <main className="workspace">
-        <section className="panel canvas-panel">
-          <div className="panel-header compact">
-            <div>
-              <p className="eyebrow">Canvas</p>
-              <h2>{document.name}</h2>
-            </div>
-            <p className="panel-copy">
-              Pen tool to trace, select tool to adjust points, Enter or double click to finish.
-            </p>
-          </div>
-          <TraceCanvas />
-        </section>
-        <Inspector />
+      <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} />
+
+      <main className="canvas-area">
+        <TraceCanvas imageOpacity={imageOpacity} />
       </main>
+
+      <Inspector />
     </div>
   );
 }
