@@ -159,7 +159,6 @@ export function TraceCanvas({ imageOpacity = 0.78 }: TraceCanvasProps) {
   };
 
   const handleCanvasPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (event.target !== event.currentTarget) return;
     if (isSpacePressed || event.button === 1) {
       setPanState({ originX: viewBoxX, originY: viewBoxY, startX: event.clientX, startY: event.clientY });
       setHoverPoint(null);
@@ -212,12 +211,13 @@ export function TraceCanvas({ imageOpacity = 0.78 }: TraceCanvasProps) {
         ref={svgRef}
         viewBox={`${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`}
       >
-        <rect fill="#0a0c10" height={document.sourceImage.height} width={document.sourceImage.width} />
+        <rect fill="#0a0c10" height={document.sourceImage.height} width={document.sourceImage.width} pointerEvents="none" />
         {referenceImageUrl ? (
           <image
             height={document.sourceImage.height}
             href={referenceImageUrl}
             opacity={imageOpacity}
+            pointerEvents="none"
             preserveAspectRatio="none"
             width={document.sourceImage.width}
           />
