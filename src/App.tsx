@@ -15,6 +15,7 @@ function App() {
     cancelActivePath,
     deleteSelectedPath,
     deleteSelectedPoint,
+    duplicateSelectedPaths,
     errorMessage,
     finishActivePath,
     loadProject,
@@ -31,6 +32,7 @@ function App() {
       cancelActivePath: state.cancelActivePath,
       deleteSelectedPath: state.deleteSelectedPath,
       deleteSelectedPoint: state.deleteSelectedPoint,
+      duplicateSelectedPaths: state.duplicateSelectedPaths,
       errorMessage: state.errorMessage,
       finishActivePath: state.finishActivePath,
       loadProject: state.loadProject,
@@ -65,7 +67,10 @@ function App() {
         target?.isContentEditable
       ) return;
 
-      if (event.key === "d" || event.key === "D" || event.key === "p" || event.key === "P") {
+      if ((event.key === "d" || event.key === "D") && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        duplicateSelectedPaths();
+      } else if (event.key === "d" || event.key === "D" || event.key === "p" || event.key === "P") {
         event.preventDefault();
         setActiveTool("draw");
       } else if (event.key === "v" || event.key === "V") {
@@ -92,6 +97,7 @@ function App() {
     cancelActivePath,
     deleteSelectedPath,
     deleteSelectedPoint,
+    duplicateSelectedPaths,
     finishActivePath,
     selectedPathId,
     selectedPointIndex,

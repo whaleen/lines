@@ -1,3 +1,4 @@
+import * as Tooltip from "@radix-ui/react-tooltip";
 import type { ReactNode } from "react";
 
 type ActiveTool = "select" | "node" | "draw";
@@ -44,25 +45,37 @@ function IconPen() {
 }
 
 export function Toolbar({ activeTool, onSelectTool }: ToolbarProps) {
-  const tools: { id: ActiveTool; icon: ReactNode; title: string }[] = [
-    { id: "select", icon: <IconArrow />, title: "Move  V" },
-    { id: "node",   icon: <IconNode />,  title: "Node  A" },
-    { id: "draw",   icon: <IconPen />,   title: "Pen  P" },
+  const tools: { id: ActiveTool; icon: ReactNode; label: string; key: string }[] = [
+    { id: "select", icon: <IconArrow />, label: "Move",      key: "V" },
+    { id: "node",   icon: <IconNode />,  label: "Node Edit", key: "A" },
+    { id: "draw",   icon: <IconPen />,   label: "Pen",       key: "P" },
   ];
 
   return (
-    <div className="toolbar">
-      {tools.map(({ id, icon, title }) => (
-        <button
-          key={id}
-          className={`tool-btn${activeTool === id ? " active" : ""}`}
-          onClick={() => onSelectTool(id)}
-          title={title}
-          type="button"
-        >
-          {icon}
-        </button>
-      ))}
-    </div>
+    <Tooltip.Provider delayDuration={400}>
+      <div className="toolbar">
+        {tools.map(({ id, icon, label, key }) => (
+          <Tooltip.Root key={id}>
+            <Tooltip.Trigger asChild>
+              <button
+                className={`tool-btn${activeTool === id ? " active" : ""}`}
+                onClick={() => onSelectTool(id)}
+                type="button"
+                aria-label={label}
+              >
+                {icon}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content className="tooltip-content" side="right" sideOffset={6}>
+                {label}
+                <span className="tooltip-key">{key}</span>
+                <Tooltip.Arrow className="tooltip-arrow" />
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        ))}
+      </div>
+    </Tooltip.Provider>
   );
 }

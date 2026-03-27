@@ -10,11 +10,14 @@ type ActiveTool = "select" | "node" | "draw";
 type EditorState = {
   activePathId: string | null;
   activeTool: ActiveTool;
+  currentStroke: string;
+  currentStrokeWidth: number;
   document: LinesDocument;
   errorMessage: string;
   projectPath: string;
   referenceImageUrl: string;
   selectedPathId: string | null;
+  selectedPathIds: string[];
   selectedPointIndex: number | null;
   statusMessage: string;
   addPointAt: (point: Point) => void;
@@ -22,6 +25,7 @@ type EditorState = {
   deleteSelectedPoint: () => void;
   deselectAll: () => void;
   cancelActivePath: () => void;
+  duplicateSelectedPaths: () => void;
   finishActivePath: () => void;
   loadProject: () => Promise<void>;
   loadReferenceImage: (file: File) => Promise<void>;
@@ -29,7 +33,7 @@ type EditorState = {
   pickComponentOutputPath: () => Promise<void>;
   pickProjectPath: () => Promise<void>;
   saveProject: () => Promise<void>;
-  selectPath: (pathId: string | null) => void;
+  selectPath: (pathId: string | null, addToSelection?: boolean) => void;
   selectPoint: (pathId: string, pointIndex: number | null) => void;
   setActiveTool: (tool: ActiveTool) => void;
   setComponentName: (value: string) => void;
@@ -77,11 +81,14 @@ function siblingComponentPath(projectPath: string, componentName: string) {
 export const useEditorStore = create<EditorState>((set, get) => ({
   activePathId: null,
   activeTool: "draw",
+  currentStroke: "currentColor",
+  currentStrokeWidth: 2,
   document: DEFAULT_DOCUMENT,
   errorMessage: "",
   projectPath: "",
   referenceImageUrl: "",
   selectedPathId: null,
+  selectedPathIds: [],
   selectedPointIndex: null,
   statusMessage: "",
   addPointAt: (point) => {
@@ -104,13 +111,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
                 id: pathId,
                 points: [point],
                 closed: false,
-                stroke: "currentColor",
-                strokeWidth: 2,
+                stroke: state.currentStroke as "currentColor" | `#${string}`,
+                strokeWidth: state.currentStrokeWidth,
                 fill: "none",
               },
             ],
           },
           selectedPathId: pathId,
+          selectedPathIds: [pathId],
           selectedPointIndex: 0,
           statusMessage: "",
         };
@@ -138,19 +146,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   deleteSelectedPath: () => {
     set((state) => {
-      if (!state.selectedPathId) {
-        return state;
-      }
-
-      const nextPaths = state.document.paths.filter((path) => path.id !== state.selectedPathId);
-
+      const ids = new Set(state.selectedPathIds.length > 0 ? state.selectedPathIds : state.selectedPathId ? [state.selectedPathId] : []);
+      if (ids.size === 0) return state;
+      const nextPaths = state.document.paths.filter((path) => !ids.has(path.id));
       return {
-        activePathId: state.activePathId === state.selectedPathId ? null : state.activePathId,
-        document: {
-          ...state.document,
-          paths: nextPaths,
-        },
+        activePathId: ids.has(state.activePathId ?? "") ? null : state.activePathId,
+        document: { ...state.document, paths: nextPaths },
         selectedPathId: null,
+        selectedPathIds: [],
         selectedPointIndex: null,
       };
     });
@@ -159,7 +162,28 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       activePathId: null,
       selectedPathId: null,
+      selectedPathIds: [],
       selectedPointIndex: null,
+    });
+  },
+  duplicateSelectedPaths: () => {
+    set((state) => {
+      const ids = new Set(state.selectedPathIds.length > 0 ? state.selectedPathIds : state.selectedPathId ? [state.selectedPathId] : []);
+      if (ids.size === 0) return state;
+      const copies = state.document.paths
+        .filter((p) => ids.has(p.id))
+        .map((p) => ({
+          ...p,
+          id: newPathId(),
+          points: p.points.map((pt) => ({ x: pt.x + 10, y: pt.y + 10 })),
+        }));
+      const newIds = copies.map((p) => p.id);
+      return {
+        document: { ...state.document, paths: [...state.document.paths, ...copies] },
+        selectedPathId: newIds[0] ?? null,
+        selectedPathIds: newIds,
+        selectedPointIndex: null,
+      };
     });
   },
   deleteSelectedPoint: () => {
@@ -208,6 +232,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           paths: state.document.paths.filter((path) => path.id !== state.activePathId),
         },
         selectedPathId: null,
+        selectedPathIds: [],
         selectedPointIndex: null,
         statusMessage: "Current path discarded.",
       };
@@ -488,11 +513,27 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       });
     }
   },
-  selectPath: (pathId) => {
-    set({
-      activePathId: null,
-      selectedPathId: pathId,
-      selectedPointIndex: null,
+  selectPath: (pathId, addToSelection = false) => {
+    set((state) => {
+      if (!pathId) return { activePathId: null, selectedPathId: null, selectedPathIds: [], selectedPointIndex: null };
+      if (addToSelection) {
+        const already = state.selectedPathIds.includes(pathId);
+        const nextIds = already
+          ? state.selectedPathIds.filter((id) => id !== pathId)
+          : [...state.selectedPathIds, pathId];
+        return {
+          activePathId: null,
+          selectedPathId: nextIds[nextIds.length - 1] ?? null,
+          selectedPathIds: nextIds,
+          selectedPointIndex: null,
+        };
+      }
+      return {
+        activePathId: null,
+        selectedPathId: pathId,
+        selectedPathIds: [pathId],
+        selectedPointIndex: null,
+      };
     });
   },
   selectPoint: (pathId, pointIndex) => {
@@ -553,37 +594,34 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ projectPath: value });
   },
   setStroke: (value) => {
-    set((state) => ({
-      document: {
-        ...state.document,
-        paths: state.document.paths.map((path) =>
-          path.id === state.selectedPathId
-            ? {
-                ...path,
-                stroke:
-                  value === "currentColor"
-                    ? "currentColor"
-                    : (`#${value.replace(/^#/, "")}` as const),
-              }
-            : path,
-        ),
-      },
-    }));
+    const normalized = value === "currentColor" ? "currentColor" : (`#${value.replace(/^#/, "")}` as const);
+    set((state) => {
+      const ids = new Set(state.selectedPathIds.length > 0 ? state.selectedPathIds : state.selectedPathId ? [state.selectedPathId] : []);
+      return {
+        currentStroke: normalized,
+        document: {
+          ...state.document,
+          paths: state.document.paths.map((path) =>
+            ids.has(path.id) ? { ...path, stroke: normalized } : path,
+          ),
+        },
+      };
+    });
   },
   setStrokeWidth: (value) => {
-    set((state) => ({
-      document: {
-        ...state.document,
-        paths: state.document.paths.map((path) =>
-          path.id === state.selectedPathId
-            ? {
-                ...path,
-                strokeWidth: Number.isFinite(value) ? Math.max(0.5, value) : path.strokeWidth,
-              }
-            : path,
-        ),
-      },
-    }));
+    const width = Number.isFinite(value) ? Math.max(0.5, value) : null;
+    set((state) => {
+      const ids = new Set(state.selectedPathIds.length > 0 ? state.selectedPathIds : state.selectedPathId ? [state.selectedPathId] : []);
+      return {
+        currentStrokeWidth: width ?? state.currentStrokeWidth,
+        document: {
+          ...state.document,
+          paths: state.document.paths.map((path) =>
+            ids.has(path.id) ? { ...path, strokeWidth: width ?? path.strokeWidth } : path,
+          ),
+        },
+      };
+    });
   },
   updatePoint: (pathId, pointIndex, point) => {
     set((state) => ({
