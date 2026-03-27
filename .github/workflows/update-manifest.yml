@@ -1,0 +1,60 @@
+name: Update Manifest
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: whaleen/homebrew-tap
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Generate latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+
+          RELEASE=$(gh api repos/whaleen/lines/releases/tags/$TAG)
+
+          URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz")) | .browser_download_url')
+          SIG_URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz.sig")) | .browser_download_url')
+          SIG_CONTENT=$(curl -sL "$SIG_URL")
+          PUB_DATE=$(echo "$RELEASE" | jq -r '.published_at')
+          NOTES=$(echo "$RELEASE" | jq -r '.body // ""')
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg pub_date "$PUB_DATE" \
+            --arg notes "$NOTES" \
+            --arg url "$URL" \
+            --arg sig "$SIG_CONTENT" \
+            '{
+              version: $version,
+              pub_date: $pub_date,
+              notes: $notes,
+              platforms: {
+                "darwin-universal": {
+                  url: $url,
+                  signature: $sig
+                }
+              }
+            }' > latest.json
+
+          echo "Generated latest.json:"
+          cat latest.json
+
+      - name: Commit and push latest.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add latest.json
+          git commit -m "update: lines ${{ github.event.release.tag_name }}"
+          git push
