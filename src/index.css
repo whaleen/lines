@@ -1,0 +1,298 @@
+:root {
+  color: #e6edf7;
+  background:
+    radial-gradient(circle at top, rgba(88, 132, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, #0a0c10 0%, #0f1218 100%);
+  font-family: "SF Pro Display", "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: 100vh;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 10, 15, 0.78);
+  backdrop-filter: blur(22px);
+  border-radius: 24px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.sidebar,
+.inspector {
+  padding: 1.25rem;
+}
+
+.canvas-panel {
+  padding: 1rem;
+}
+
+.panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.panel-header.compact {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-header h1,
+.panel-header h2,
+.panel-header h3 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.panel-copy,
+.muted-copy {
+  margin: 0;
+  color: rgba(230, 237, 247, 0.68);
+  font-size: 0.95rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.2rem;
+  color: #8ca1ff;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.toolbar,
+.tool-strip {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tool-cluster {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.action-row {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tool-button,
+.primary-button {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 0.8rem 0.95rem;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.tool-button:hover,
+.primary-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.tool-button.is-active {
+  background: rgba(88, 132, 255, 0.18);
+  border-color: rgba(140, 161, 255, 0.8);
+}
+
+.tool-button:disabled,
+.primary-button:disabled,
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #5a7cff 0%, #6db3ff 100%);
+  color: #0b1020;
+  font-weight: 700;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.field-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.field-group,
+.file-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+label {
+  font-size: 0.86rem;
+  color: rgba(230, 237, 247, 0.72);
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  border-radius: 12px;
+  padding: 0.72rem 0.85rem;
+}
+
+.status-stack {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.status-line,
+.status-ok,
+.status-error {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.status-line span {
+  color: rgba(230, 237, 247, 0.72);
+}
+
+.status-ok {
+  color: #7fe7b1;
+}
+
+.status-error {
+  color: #ff8d8d;
+}
+
+.canvas-frame {
+  position: relative;
+  flex: 1;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 0 0 / 18px 18px,
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 0 0 / 18px 18px,
+    rgba(4, 6, 10, 0.96);
+}
+
+.canvas-controls {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+
+.canvas-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  color: rgba(230, 237, 247, 0.68);
+}
+
+.inspector-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.inspector-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.inspector-card h3 {
+  margin: 0;
+}
+
+.danger-button {
+  border: 1px solid rgba(255, 141, 141, 0.2);
+  background: rgba(255, 141, 141, 0.08);
+  color: #ffb0b0;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+}
+
+@media (max-width: 1180px) {
+  .app-shell,
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-frame {
+    min-height: 420px;
+  }
+}
