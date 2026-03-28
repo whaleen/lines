@@ -39,6 +39,11 @@ function App() {
           <button className="update-banner-btn" onClick={relaunchApp} type="button">Relaunch</button>
         </div>
       )}
+      {updateState.status === "error" && (
+        <div className="update-banner update-banner--error">
+          <span>Update check failed: {updateState.message}</span>
+        </div>
+      )}
       {screen.id === "project" && (
         <ProjectScreen project={screen.project} components={screen.components} />
       )}

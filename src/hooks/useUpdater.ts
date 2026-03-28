@@ -20,8 +20,8 @@ export function useUpdater() {
       if (update?.available) {
         setState({ status: "available", version: update.version, body: update.body ?? null });
       }
-    }).catch(() => {
-      // Silently ignore — no network, etc.
+    }).catch((e) => {
+      setState({ status: "error", message: e instanceof Error ? e.message : String(e) });
     });
   }, []);
 
