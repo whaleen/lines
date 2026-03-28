@@ -88,10 +88,8 @@ jobs:
               version: $version,
               pub_date: $pub_date,
               platforms: {
-                "darwin-universal": {
-                  url: $url,
-                  signature: $sig
-                }
+                "darwin-aarch64": { url: $url, signature: $sig },
+                "darwin-x86_64":  { url: $url, signature: $sig }
               }
             }' > latest.json
 
