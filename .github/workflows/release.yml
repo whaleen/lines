@@ -37,21 +37,31 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri -- build --target universal-apple-darwin
 
+      - name: Package and sign updater artifact
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          BUNDLE="src-tauri/target/universal-apple-darwin/release/bundle/macos"
+          tar czf "$BUNDLE/lines.app.tar.gz" -C "$BUNDLE" lines.app
+          npm run tauri -- signer sign \
+            --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
+            --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
+            "$BUNDLE/lines.app.tar.gz"
+
       - name: Create release and upload artifacts
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           TAG: ${{ github.ref_name }}
         run: |
           BUNDLE="src-tauri/target/universal-apple-darwin/release/bundle"
-          DMG="$BUNDLE/dmg/lines_${TAG#v}_universal.dmg"
-          TAR="$BUNDLE/macos/lines.app.tar.gz"
-          SIG="$BUNDLE/macos/lines.app.tar.gz.sig"
-
           gh release create "$TAG" \
             --title "lines $TAG" \
             --notes "" \
             --repo whaleen/lines \
-            "$DMG" "$TAR" "$SIG"
+            "$BUNDLE/dmg/lines_${TAG#v}_universal.dmg" \
+            "$BUNDLE/macos/lines.app.tar.gz" \
+            "$BUNDLE/macos/lines.app.tar.gz.sig"
 
       - name: Update latest.json in homebrew-tap
         env:
