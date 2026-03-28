@@ -5,7 +5,6 @@ import { Inspector } from "../components/Inspector";
 import { LayersPanel } from "../components/LayersPanel";
 import { Toolbar } from "../components/Toolbar";
 import { TraceCanvas } from "../components/TraceCanvas";
-import { useUpdater } from "../hooks/useUpdater";
 import { generateComponentSource } from "../lib/component-generator";
 import { useEditorStore } from "../store/editor-store";
 import { useProjectStore } from "../store/project-store";
@@ -19,7 +18,6 @@ export function EditorScreen({ project, component }: EditorScreenProps) {
   const [editorTab, setEditorTab] = useState<"canvas" | "code">("canvas");
   const [rightTab, setRightTab] = useState<"properties" | "layers">("properties");
   const [showResizeDialog, setShowResizeDialog] = useState(false);
-  const { state: updateState, install, relaunchApp } = useUpdater();
   const { goToProject } = useProjectStore();
 
   const {
@@ -228,25 +226,6 @@ export function EditorScreen({ project, component }: EditorScreenProps) {
           <button className="topbar-btn primary" style={{ marginLeft: "auto" }} onClick={() => saveNow(project)} type="button">Save</button>
         )}
       </header>
-
-      {updateState.status === "available" && (
-        <div className="update-banner">
-          <span>lines {updateState.version} is available</span>
-          <button className="update-banner-btn" onClick={install} type="button">Install update</button>
-        </div>
-      )}
-      {updateState.status === "downloading" && (
-        <div className="update-banner">
-          <span>Downloading… {updateState.progress}%</span>
-          <div className="update-progress-bar"><div className="update-progress-fill" style={{ width: `${updateState.progress}%` }} /></div>
-        </div>
-      )}
-      {updateState.status === "ready" && (
-        <div className="update-banner update-banner--ready">
-          <span>Update ready</span>
-          <button className="update-banner-btn" onClick={relaunchApp} type="button">Relaunch</button>
-        </div>
-      )}
 
       <Toolbar activeTool={activeTool} onSelectTool={setActiveTool} />
 
