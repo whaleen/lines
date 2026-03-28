@@ -10,14 +10,7 @@ permissions:
 
 jobs:
   release:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: --target universal-apple-darwin
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -38,36 +31,27 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Create GitHub release
+      - name: Build
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-          TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --title "lines $TAG" --notes "" --repo whaleen/lines
-
-      - uses: tauri-apps/tauri-action@v0
-        id: tauri
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: lines ${{ github.ref_name }}
-          releaseDraft: false
-          prerelease: false
-          args: ${{ matrix.args }}
+        run: npm run tauri -- build --target universal-apple-darwin
 
-      - name: Upload .sig file
+      - name: Create release and upload artifacts
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           TAG: ${{ github.ref_name }}
         run: |
-          SIG="src-tauri/target/universal-apple-darwin/release/bundle/macos/lines.app.tar.gz.sig"
-          if [ -f "$SIG" ]; then
-            gh release upload "$TAG" "$SIG" --clobber --repo whaleen/lines
-          else
-            echo "ERROR: .sig file not found at $SIG" && exit 1
-          fi
+          BUNDLE="src-tauri/target/universal-apple-darwin/release/bundle"
+          DMG="$BUNDLE/dmg/lines_${TAG#v}_universal.dmg"
+          TAR="$BUNDLE/macos/lines.app.tar.gz"
+          SIG="$BUNDLE/macos/lines.app.tar.gz.sig"
+
+          gh release create "$TAG" \
+            --title "lines $TAG" \
+            --notes "" \
+            --repo whaleen/lines \
+            "$DMG" "$TAR" "$SIG"
 
       - name: Update latest.json in homebrew-tap
         env:
@@ -75,11 +59,12 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           VERSION="${TAG#v}"
-          SIG_CONTENT=$(cat "src-tauri/target/universal-apple-darwin/release/bundle/macos/lines.app.tar.gz.sig")
+          BUNDLE="src-tauri/target/universal-apple-darwin/release/bundle"
+          SIG_CONTENT=$(cat "$BUNDLE/macos/lines.app.tar.gz.sig")
+
           RELEASE=$(gh api repos/whaleen/lines/releases/tags/$TAG)
-          URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("universal.app.tar.gz")) | .browser_download_url')
+          URL=$(echo "$RELEASE" | jq -r '.assets[] | select(.name | endswith("app.tar.gz")) | .browser_download_url')
           PUB_DATE=$(echo "$RELEASE" | jq -r '.published_at')
-          NOTES=$(echo "$RELEASE" | jq -r '.body // ""')
 
           git clone https://x-access-token:$GH_TOKEN@github.com/whaleen/homebrew-tap.git /tmp/homebrew-tap
           cd /tmp/homebrew-tap
@@ -87,13 +72,11 @@ jobs:
           jq -n \
             --arg version "$VERSION" \
             --arg pub_date "$PUB_DATE" \
-            --arg notes "$NOTES" \
             --arg url "$URL" \
             --arg sig "$SIG_CONTENT" \
             '{
               version: $version,
               pub_date: $pub_date,
-              notes: $notes,
               platforms: {
                 "darwin-universal": {
                   url: $url,
