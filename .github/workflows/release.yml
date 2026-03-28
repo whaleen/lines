@@ -38,10 +38,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --title "lines $TAG" --notes "" --repo whaleen/lines
+
       - uses: tauri-apps/tauri-action@v0
         id: tauri
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
@@ -53,12 +59,12 @@ jobs:
 
       - name: Upload .sig file
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           TAG: ${{ github.ref_name }}
         run: |
           SIG="src-tauri/target/universal-apple-darwin/release/bundle/macos/lines.app.tar.gz.sig"
           if [ -f "$SIG" ]; then
-            gh release upload "$TAG" "$SIG" --clobber
+            gh release upload "$TAG" "$SIG" --clobber --repo whaleen/lines
           else
             echo "ERROR: .sig file not found at $SIG" && exit 1
           fi
