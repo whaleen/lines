@@ -113,6 +113,9 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - ✅ In-app auto-updater — checks on launch, downloads in background, prompts to relaunch
 - ✅ Signed releases (minisign keypair, TAURI_SIGNING_PRIVATE_KEY secret)
 - ✅ `latest.json` manifest auto-updated in homebrew-tap on release publish
+- 📋 Linux — add `ubuntu-22.04` to build matrix, apt deps, AppImage + .deb bundles
+- 📋 Linux — AUR `-bin` package for Arch users (PKGBUILD auto-updated in release workflow)
+- 📋 Linux — add `linux-x86_64` platform entry to `latest.json` for in-app updater
 
 ## Desktop App — UX
 
