@@ -2,6 +2,16 @@
 
 Feature source of truth. Update this when features ship, change, or get cut.
 
+## Multi-Project System
+
+- ✅ Launch screen — recent projects list, open folder
+- ✅ Project screen — list components in `linesDir`, open/new/rename/delete
+- ✅ Editor screen — edit a single component, back to project
+- ✅ Project detection — reads `components.json` + `tsconfig.json` to resolve `linesDir`
+- ✅ Recents — persisted via `@tauri-apps/plugin-store`, last 20 projects
+- ✅ `linesDir` re-detected on every open (stale recents self-heal)
+- ✅ Color mode per project (dark / light / system), persisted to store
+
 ## Editor — Canvas
 
 - ✅ Load reference image (PNG/JPG) as non-exportable background layer
@@ -9,6 +19,9 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - ✅ Zoom (scroll wheel, zoom buttons, fit button)
 - ✅ SVG canvas with correct viewport/transform (getScreenCTM for pixel-accurate coordinate mapping)
 - ✅ Reference image opacity control (topbar slider)
+- ✅ Canvas resize dialog — 3×3 anchor grid, W/H inputs, paths and image shift accordingly
+- ✅ Crop tool — drag handles to define crop region, Enter to commit, Escape to cancel
+- ✅ Code view tab — shows generated component source
 - 📋 Fit-to-window on image load
 - 📋 Zoom to fit / zoom to 100% keyboard shortcuts
 - 📋 Canvas background color toggle (white / dark / transparent grid)
@@ -19,67 +32,78 @@ Feature source of truth. Update this when features ship, change, or get cut.
 - ✅ Pen tool — press and drag for freehand continuous stroke (auto-finishes on pointerup)
 - ✅ Select tool (click path to select, drag to move)
 - ✅ Node edit tool — select individual points on a path, drag to reposition
+- ✅ Crop tool — drag handles on canvas to set crop region
 - ✅ Finish path (Enter)
 - ✅ Cancel active path (Escape)
 - ✅ Delete selected path(s) (Delete/Backspace)
 - ✅ Delete individual point (Delete/Backspace in node edit mode)
-- ✅ Move tool — drag entire selected path
 - ✅ Multi-select — shift+click to add/remove paths from selection
-- ✅ Duplicate path(s) — ⌘D or context menu
+- ✅ Select all (⌘A)
+- ✅ Duplicate path(s) — ⌘D
+- ✅ Copy / Cut / Paste — ⌘C / ⌘X / ⌘V
+- ✅ Group paths — ⌘G
+- ✅ Z-order — ⌘] / ⌘[ (forward/back), ⌘⇧] / ⌘⇧[ (front/back)
 - ✅ Right-click context menu — Duplicate / Delete with selection count
-- 📋 Close path (toggle open/closed)
 - 📋 Insert point on path segment (click on edge)
 - 📋 Bezier curve handles (v2, deferred)
+- 📋 Ungroup (⌘⇧G)
 
 ## Editor — Toolbar
 
-- ✅ Tool palette with SVG icons (Move, Node Edit, Pen)
-- ✅ Tool keyboard shortcuts shown in tooltip (V, A, P)
+- ✅ Tool palette with SVG icons (Select, Node Edit, Draw, Crop)
+- ✅ Tool keyboard shortcuts shown in tooltip (V, A, P/D, C)
 - ✅ Active tool highlight
-- ✅ Node edit tool in toolbar
-- ✅ Tooltips via Radix UI
 
 ## Editor — Inspector / Properties
 
-- ✅ Stroke color picker + hex input
+- ✅ Canvas section: size stat, "Resize…" button
+- ✅ Fill color picker (none / currentColor / shadcn theme tokens)
+- ✅ Stroke color picker (none / currentColor / shadcn theme tokens)
 - ✅ Stroke width input
-- ✅ Stroke style persists to new paths (currentStroke / currentStrokeWidth)
-- ✅ Stroke / width changes apply to all selected paths
-- ✅ Delete path button
-- 📋 Stroke uses CSS var reference (e.g. `var(--foreground)`) with hex fallback
-- 📋 Fill color (none / CSS var / hex)
-- 📋 Stroke linecap (butt / round / square)
-- 📋 Stroke linejoin (miter / round / bevel)
-- 📋 Opacity
-- 📋 Path name/label (for generated component prop names)
-- 📋 Layer order (up/down)
+- ✅ Opacity slider per path
+- ✅ Open / Closed path toggle
+- ✅ Point count + selected point index display
+- ✅ Style persists to new paths (currentFill / currentStroke / currentStrokeWidth)
+- 📋 Path name/label
+
+## Editor — Layers
+
+- ✅ Layers panel (tab alongside Properties)
+- ✅ Layer visibility toggle
+- ✅ Layer lock toggle
+- ✅ Layer opacity slider
+- ✅ Add / delete layers
+- ✅ Rename layer (inline)
+- ✅ Reorder layers (drag or up/down buttons)
+- 📋 Layer blend mode (removed from UI — data model retained for future)
 
 ## Editor — Theming
 
+- ✅ Color picker offers shadcn CSS var tokens (--foreground, --primary, --muted-foreground, etc.)
+- ✅ `CssColor` type supports `none`, `currentColor`, `hsl(var(--token))`, `#hex`
+- ✅ Generated component embeds CSS var references directly — inherits consuming project's theme
 - 📋 Preview panel renders component in shadcn light and dark themes side by side
-- 📋 Stroke color picker offers CSS var suggestions from shadcn palette (--foreground, --primary, --muted-foreground, etc.)
-- 📋 Component output uses CSS vars by default, falls back to hex for non-var values
-- 📋 `strokeWidth` is a prop on the generated component (so consumers can override)
+- 📋 `strokeWidth` as a prop on the generated component
 
 ## Editor — File / Project
 
-- ✅ Save project as `.lines.json`
-- ✅ Load `.lines.json` project file
+- ✅ Save component as `.lines.json` + generated `.tsx` to project's `linesDir`
+- ✅ Load component from `.lines.json`
+- ✅ Auto-save (debounced, triggers on `isDirty` + `componentName`)
+- ✅ Component name editable in topbar; only invalid filename chars stripped
 - ✅ Generate React `.tsx` component from document
-- ✅ Component name and output path editable in inspector
-- 📋 Auto-save (write `.lines.json` on every change, debounced)
-- 📋 Open existing `.tsx` component + its sibling `.lines.json` for editing (round-trip)
-- 📋 Recent files list
 - 📋 Unsaved changes indicator + confirm-before-close
 - 📋 Export plain SVG (no React wrapper)
+- 📋 Open existing `.tsx` + `.lines.json` for re-editing (full round-trip)
 
 ## Generated Component Format
 
-- 📋 Props: `className`, `strokeWidth` (number, default from editor), any named color overrides
-- 📋 Uses `vectorEffect="non-scaling-stroke"` on paths
-- 📋 Stroke colors default to CSS vars (`var(--foreground)`) or explicit hex
-- 📋 Component is a single default export, named from project name (PascalCase)
-- 📋 No runtime dependencies — pure SVG in JSX
+- ✅ Uses shadcn CSS var color values by default
+- ✅ `vectorEffect="non-scaling-stroke"` on paths
+- ✅ Single default export named from component name
+- ✅ No runtime dependencies — pure SVG in JSX
+- 📋 `className` and `strokeWidth` props
+- 📋 Named color override props
 
 ## Desktop App — Distribution
 
@@ -99,7 +123,7 @@ Feature source of truth. Update this when features ship, change, or get cut.
 
 ## CLI (`lines`)
 
-- 📋 `lines init` — create `components/lines/data/` dir in current project, add to `.gitignore` convention
+- 📋 `lines init` — create `components/lines/` dir in current project
 - 📋 `lines add <name>` — fetch component + `.lines.json` from registry, copy to correct dirs
 - 📋 `lines list` — list available components in the registry
 - 📋 `lines remove <name>` — delete component and data file from project
@@ -119,7 +143,7 @@ Feature source of truth. Update this when features ship, change, or get cut.
 
 - 📋 Install convention mirrors shadcn: copy source into project (not a node_modules dep)
 - 📋 Components land in `components/lines/` by default (configurable via `lines.config.json`)
-- 📋 `lines.config.json` in project root: output dir, data dir, aliases
+- 📋 `lines.config.json` in project root: output dir, aliases
 - 📋 Works with any shadcn project out of the box — no extra setup beyond `lines init`
 - 📋 Components use the same CSS variable names as shadcn (`--background`, `--foreground`, etc.)
 
@@ -127,5 +151,4 @@ Feature source of truth. Update this when features ship, change, or get cut.
 
 - Canvas doesn't fit-to-window on image load
 - No preview of what the component looks like outside the editor (no theme preview)
-- Stroke colors are raw hex — no CSS var support yet
-- No close path toggle
+- No close path toggle via keyboard (inspector only)

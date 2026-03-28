@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { useProjectStore } from "../store/project-store";
-import { sanitizeComponentName } from "../store/editor-store";
 import type { ComponentEntry, Project } from "../types/project";
 
 type ProjectScreenProps = {
@@ -31,13 +30,9 @@ function ComponentCard({ project, component }: CardProps) {
   };
 
   const commitRename = async () => {
-    const sanitized = sanitizeComponentName(renameValue);
     setRenaming(false);
-    if (sanitized && sanitized !== component.name) {
-      await renameComponent(project, component, sanitized);
-    } else {
-      setRenameValue(component.name);
-    }
+    await renameComponent(project, component, renameValue);
+    setRenameValue(component.name);
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {

@@ -2,11 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { load } from "@tauri-apps/plugin-store";
 import { create } from "zustand";
-import { sanitizeComponentName } from "./editor-store";
 import type { ComponentEntry, Project, ProjectMode } from "../types/project";
+
+export type ColorMode = "dark" | "light" | "system";
 
 const STORE_FILE = "projects.json";
 const STORE_KEY = "recent";
+const COLOR_MODE_KEY = "colorMode";
 
 type AppScreen =
   | { id: "launch" }
@@ -16,6 +18,7 @@ type AppScreen =
 type ProjectState = {
   screen: AppScreen;
   recentProjects: Project[];
+  colorMode: ColorMode;
   // Actions
   loadRecents: () => Promise<void>;
   openProjectFolder: () => Promise<void>;
@@ -27,6 +30,7 @@ type ProjectState = {
   renameComponent: (project: Project, component: ComponentEntry, newName: string) => Promise<void>;
   goToLaunch: () => void;
   goToProject: (project: Project) => Promise<void>;
+  setColorMode: (mode: ColorMode) => Promise<void>;
 };
 
 function folderName(path: string) {
@@ -54,12 +58,18 @@ async function saveRecents(projects: Project[]) {
 export const useProjectStore = create<ProjectState>((set, get) => ({
   screen: { id: "launch" },
   recentProjects: [],
+  colorMode: "dark",
 
   loadRecents: async () => {
     try {
       const store = await load(STORE_FILE);
       const projects = await store.get<Project[]>(STORE_KEY);
-      set({ recentProjects: projects ?? [] });
+      const storedMode = await store.get<string>(COLOR_MODE_KEY);
+      const validModes: ColorMode[] = ["dark", "light", "system"];
+      const colorMode: ColorMode = validModes.includes(storedMode as ColorMode)
+        ? (storedMode as ColorMode)
+        : "dark";
+      set({ recentProjects: projects ?? [], colorMode });
     } catch {
       set({ recentProjects: [] });
     }
@@ -89,7 +99,19 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   openProject: async (project) => {
-    const updated = { ...project, lastOpened: new Date().toISOString() };
+    // Re-detect linesDir so stale recents data doesn't point to the wrong folder.
+    let linesDir = project.linesDir;
+    let mode = project.mode;
+    try {
+      const detected = await invoke<{ mode: string; linesDir: string }>("detect_project", {
+        folderPath: project.path,
+      });
+      linesDir = detected.linesDir;
+      mode = detected.mode as ProjectMode;
+    } catch {
+      // non-fatal — use stored values
+    }
+    const updated = { ...project, mode, linesDir, lastOpened: new Date().toISOString() };
     const recents = [updated, ...get().recentProjects.filter((p) => p.id !== project.id)].slice(0, 20);
     set({ recentProjects: recents });
     await saveRecents(recents);
@@ -130,10 +152,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   renameComponent: async (project, component, newName) => {
-    const sanitized = sanitizeComponentName(newName);
-    if (!sanitized || sanitized === component.name) return;
+    const trimmed = newName.trim().replace(/[/\\:*?"<>|]/g, "");
+    if (!trimmed || trimmed === component.name) return;
 
-    const { tsxPath: newTsx, jsonPath: newJson } = derivePaths(project.linesDir, sanitized);
+    const { tsxPath: newTsx, jsonPath: newJson } = derivePaths(project.linesDir, trimmed);
 
     await invoke("rename_component", {
       oldTsxPath: component.tsxPath,
@@ -147,5 +169,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   goToLaunch: () => {
     set({ screen: { id: "launch" } });
+  },
+
+  setColorMode: async (mode) => {
+    set({ colorMode: mode });
+    try {
+      const store = await load(STORE_FILE);
+      await store.set(COLOR_MODE_KEY, mode);
+      await store.save();
+    } catch {
+      // non-fatal
+    }
   },
 }));

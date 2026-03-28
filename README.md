@@ -3,7 +3,7 @@
 Desktop tracing tool for drawing SVG line overlays on top of reference images, then saving the result as:
 
 - a `.lines.json` project file for the editor
-- a generated `.tsx` React component for app consumption and HMR
+- a generated `.tsx` React component for app consumption
 
 The app runs as `Tauri + React + TypeScript` and uses `vite+` for the web toolchain.
 
@@ -26,38 +26,52 @@ The app includes an auto-updater — when a new version is available it will pro
 
 ## Current Scope
 
-- Load a reference image into the canvas
-- Trace open line paths — click to place points or press+drag for freehand
-- Select paths and points; shift+click for multi-select
+- Open any folder as a project; components are saved to the project's `components/lines/` directory
+- Load a reference image into the canvas; control its opacity with the topbar slider
+- Trace open or closed line paths — click to place points or press+drag for freehand
+- Select paths and points; shift+click for multi-select, ⌘A to select all
 - Drag points (node edit) or drag entire paths (select tool)
+- Copy, cut, paste, and duplicate paths
+- Control z-order (bring forward/back, send to front/back)
+- Group paths (⌘G)
 - Right-click context menu for duplicate and delete
-- Edit stroke color and width per path; style persists to new paths
-- Duplicate paths (⌘D)
-- Delete selected paths or individual points
-- Save the editor document and generated component together
+- Edit fill and stroke color per path using shadcn CSS variable tokens or explicit values
+- Edit stroke width and path opacity; style persists to new paths
+- Toggle paths open/closed
+- Manage layers — visibility, lock, opacity, rename, reorder
+- Resize canvas with a 3×3 anchor grid dialog (paths and image shift to match)
+- Crop canvas — drag handles to define region, Enter to commit
+- Code view tab shows the generated component source in real time
+- Auto-save: saves both `.lines.json` and `.tsx` whenever the document is dirty
 
 The reference image is an editor-only layer. The generated component contains only the traced SVG output.
 
 ## File Contract
 
-Each traced asset produces:
+Each traced asset produces two files in the project's `components/lines/` directory:
 
-- `Something.lines.json` — editor source of truth
-- `SomethingLines.tsx` — app-facing React component
+- `something.lines.json` — editor source of truth
+- `something.tsx` — app-facing React component
 
-The generated component hot-reloads inside any React frontend.
+The generated component uses shadcn CSS variable references (`hsl(var(--foreground))` etc.) and hot-reloads inside any React frontend.
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `P` / `D` | Pen tool |
+| `P` / `D` | Draw (pen) tool |
 | `V` | Select / Move tool |
 | `A` | Node edit tool |
-| `Enter` | Finish active path |
-| `Escape` | Cancel active path |
+| `C` | Crop tool |
+| `Enter` | Finish active path / commit crop |
+| `Escape` | Cancel active path / cancel crop |
 | `Delete` / `Backspace` | Delete selected path or point |
+| `⌘A` | Select all paths |
 | `⌘D` | Duplicate selected path(s) |
+| `⌘C` / `⌘X` / `⌘V` | Copy / Cut / Paste |
+| `⌘G` | Group selected paths |
+| `⌘]` / `⌘[` | Bring forward / Send backward |
+| `⌘⇧]` / `⌘⇧[` | Bring to front / Send to back |
 | `Space + drag` | Pan canvas |
 | Scroll | Zoom |
 
@@ -84,7 +98,7 @@ npm run desktop:build
 - Tauri uses `vp dev` and `vp build` internally via [`src-tauri/tauri.conf.json`](./src-tauri/tauri.conf.json).
 - The editor document model lives in [`src/types/lines.ts`](./src/types/lines.ts).
 - The generated React component output is produced by [`src/lib/component-generator.ts`](./src/lib/component-generator.ts).
-- File writes are handled by the Tauri command in [`src-tauri/src/lib.rs`](./src-tauri/src/lib.rs).
+- File writes and project detection are handled by Tauri commands in [`src-tauri/src/lib.rs`](./src-tauri/src/lib.rs).
 - SVG coordinate mapping uses `createSVGPoint().matrixTransform(getScreenCTM().inverse())` for pixel-accurate pointer conversion at any zoom/pan level.
 
 ## Release Pipeline

@@ -40,6 +40,30 @@ struct ProjectInfo {
     lines_dir: String, // absolute path to where components should live
 }
 
+fn strip_alias_prefix(s: &str) -> &str {
+    s.trim_start_matches('@')
+        .trim_start_matches('~')
+        .trim_start_matches('/')
+        .trim_start_matches('\\')
+}
+
+/// Reads tsconfig.json at `root` and extracts the directory that `@/` maps to.
+/// For `"@/*": ["./src/*"]` this returns `Some("src")`.
+fn resolve_at_prefix(root: &Path) -> Option<String> {
+    let tsconfig_raw = fs::read_to_string(root.join("tsconfig.json")).ok()?;
+    let tsconfig: serde_json::Value = serde_json::from_str(&tsconfig_raw).ok()?;
+    let mapping = tsconfig
+        .get("compilerOptions")
+        .and_then(|c| c.get("paths"))
+        .and_then(|p| p.get("@/*"))
+        .and_then(|v| v.as_array())
+        .and_then(|arr| arr.first())
+        .and_then(|v| v.as_str())?;
+    // mapping is like "./src/*" — strip "./" prefix and "/*" suffix
+    let stripped = mapping.strip_suffix("/*")?.trim_start_matches("./");
+    Some(stripped.to_string())
+}
+
 /// Reads the repo root for components.json (shadcn marker).
 /// If found, derives the lines dir from its aliases.components value.
 /// Falls back to adhoc mode with a sensible default.
@@ -53,21 +77,27 @@ fn detect_project(folder_path: String) -> Result<ProjectInfo, String> {
         let parsed: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
 
         // shadcn components.json has aliases.components like "@/components"
-        // Resolve that to an absolute path by stripping the alias prefix
         let comp_alias = parsed
             .get("aliases")
             .and_then(|a| a.get("components"))
             .and_then(|v| v.as_str())
             .unwrap_or("src/components");
 
-        // Strip leading alias (@/, ~/, etc.) and treat as relative to root
-        let relative = comp_alias
-            .trim_start_matches('@')
-            .trim_start_matches('~')
-            .trim_start_matches('/')
-            .trim_start_matches('\\');
+        // Resolve @/ prefix via tsconfig.json path mappings if available.
+        // e.g. "@/*" -> ["./src/*"] means "@/components" -> "src/components"
+        let at_prefix = resolve_at_prefix(root);
 
-        let lines_dir = root.join(relative).join("lines");
+        let relative = if let Some(prefix) = &at_prefix {
+            if let Some(after) = comp_alias.strip_prefix("@/") {
+                format!("{}/{}", prefix, after)
+            } else {
+                strip_alias_prefix(comp_alias).to_string()
+            }
+        } else {
+            strip_alias_prefix(comp_alias).to_string()
+        };
+
+        let lines_dir = root.join(&relative).join("lines");
         return Ok(ProjectInfo {
             mode: "shadcn".into(),
             lines_dir: lines_dir.to_string_lossy().into_owned(),
@@ -130,6 +160,17 @@ fn list_components(lines_dir: String) -> Result<Vec<ComponentEntry>, String> {
     Ok(components)
 }
 
+/// Copies a file from src to dest, creating parent dirs as needed.
+#[tauri::command]
+fn copy_file(src_path: String, dest_path: String) -> Result<(), String> {
+    let dest = Path::new(&dest_path);
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::copy(&src_path, dest).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// Deletes both the .tsx and .lines.json files for a component.
 #[tauri::command]
 fn delete_component(tsx_path: String, json_path: String) -> Result<(), String> {
@@ -183,6 +224,7 @@ pub fn run() {
             list_components,
             delete_component,
             rename_component,
+            copy_file,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

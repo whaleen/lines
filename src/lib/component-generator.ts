@@ -1,28 +1,39 @@
 import type { LinesDocument } from "../types/lines";
 import { pointsToPathData } from "./path-data";
 
-const componentNamePattern = /[^A-Za-z0-9_$]/g;
-
-function sanitizeComponentName(name: string) {
-  const compact = name.trim().replace(componentNamePattern, "");
-
-  if (!compact) {
-    return "UntitledLines";
-  }
-
-  return /^[A-Za-z_$]/.test(compact) ? compact : `Lines${compact}`;
-}
-
 export function generateComponentSource(document: LinesDocument): string {
-  const componentName = sanitizeComponentName(document.export.componentName);
-  const body = document.paths
-    .map((path) => {
-      const d = pointsToPathData(path.points, path.closed);
-      return `      <path d="${d}" fill="${path.fill}" stroke="${path.stroke}" strokeWidth={${
-        path.strokeWidth
-      } * strokeWidthScale} vectorEffect="non-scaling-stroke" />`;
-    })
-    .join("\n");
+  const componentName = sanitize(document.export.componentName);
+  const { width, height } = document.canvas;
+
+  const layerBlocks = document.layers
+    .filter((layer) => layer.visible && layer.paths.length > 0)
+    .map((layer) => {
+      const gAttrs: string[] = [];
+      if (layer.opacity < 1) gAttrs.push(`opacity={${layer.opacity}}`);
+      if (layer.blendMode !== "normal") gAttrs.push(`style={{ mixBlendMode: "${layer.blendMode}" }}`);
+
+      const pathLines = layer.paths.map((path) => {
+        const d = pointsToPathData(path.points, path.closed);
+        const attrs: string[] = [
+          `d="${d}"`,
+          `fill="${path.fill}"`,
+          `stroke="${path.stroke}"`,
+          `strokeWidth={${path.strokeWidth} * strokeWidthScale}`,
+        ];
+        if (path.strokeLinecap !== "round") attrs.push(`strokeLinecap="${path.strokeLinecap}"`);
+        if (path.strokeLinejoin !== "round") attrs.push(`strokeLinejoin="${path.strokeLinejoin}"`);
+        if (path.opacity < 1) attrs.push(`opacity={${path.opacity}}`);
+        attrs.push(`vectorEffect="non-scaling-stroke"`);
+        return `        <path ${attrs.join(" ")} />`;
+      });
+
+      const open = gAttrs.length ? `      <g ${gAttrs.join(" ")}>` : `      <g>`;
+      return `${open}\n${pathLines.join("\n")}\n      </g>`;
+    });
+
+  const body = layerBlocks.length
+    ? layerBlocks.join("\n")
+    : `      {/* Add traced paths in lines */}`;
 
   return `import type { SVGProps } from 'react'
 
@@ -36,10 +47,16 @@ export function ${componentName}({
   ...props
 }: ${componentName}Props) {
   return (
-    <svg viewBox="0 0 ${document.sourceImage.width} ${document.sourceImage.height}" fill="none" {...props}>
-${body || "      {/* Add traced paths in lines */}"}
+    <svg viewBox="0 0 ${width} ${height}" fill="none" {...props}>
+${body}
     </svg>
   )
 }
 `;
+}
+
+function sanitize(name: string): string {
+  const compact = name.trim().replace(/[^A-Za-z0-9_$]/g, "");
+  if (!compact) return "UntitledLines";
+  return /^[A-Za-z_$]/.test(compact) ? compact : `Lines${compact}`;
 }

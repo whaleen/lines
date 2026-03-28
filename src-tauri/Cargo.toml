@@ -1,6 +1,6 @@
 [package]
 name = "lines"
-version = "0.1.0"
+version = "0.2.0"
 description = "Desktop tracing tool for SVG line overlays"
 authors = ["josh"]
 license = ""

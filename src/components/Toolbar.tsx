@@ -1,7 +1,6 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import type { ReactNode } from "react";
-
-type ActiveTool = "select" | "node" | "draw";
+import type { ActiveTool } from "../store/editor-store";
 
 type ToolbarProps = {
   activeTool: ActiveTool;
@@ -44,11 +43,21 @@ function IconPen() {
   );
 }
 
+function IconCrop() {
+  return (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" aria-hidden="true">
+      <path d="M5 2v13h13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 5h13v13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.45" />
+    </svg>
+  );
+}
+
 export function Toolbar({ activeTool, onSelectTool }: ToolbarProps) {
   const tools: { id: ActiveTool; icon: ReactNode; label: string; key: string }[] = [
     { id: "select", icon: <IconArrow />, label: "Move",      key: "V" },
     { id: "node",   icon: <IconNode />,  label: "Node Edit", key: "A" },
     { id: "draw",   icon: <IconPen />,   label: "Pen",       key: "P" },
+    { id: "crop",   icon: <IconCrop />,  label: "Crop",      key: "C" },
   ];
 
   return (
